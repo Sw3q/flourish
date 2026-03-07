@@ -124,6 +124,14 @@ export function useAdminActions() {
         return false;
     };
 
+    const deleteProposal = async (proposalId: string) => {
+        const { error } = await supabase
+            .from('proposals')
+            .delete()
+            .eq('id', proposalId);
+        return !error;
+    };
+
     return {
         users,
         categories,
@@ -133,6 +141,7 @@ export function useAdminActions() {
         createCategory,
         addFunds,
         approveUser,
-        revokeUser
+        revokeUser,
+        deleteProposal,
     };
 }

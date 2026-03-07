@@ -9,7 +9,9 @@ export default function Dashboard() {
         votingPower,
         fundBalance,
         loading,
-        delegateVote
+        categoryDelegations,
+        delegateVote,
+        delegateVoteForCategory,
     } = useDashboardData();
 
     const handleDelegate = async (targetUserId: string | null) => {
@@ -53,21 +55,26 @@ export default function Dashboard() {
             <div className="grid md:grid-cols-3 gap-8">
                 <div className="md:col-span-2">
                     {currentUser && (
-                        <ProposalsList currentUserId={currentUser.id} votingPower={votingPower} />
+                        <ProposalsList
+                            currentUserId={currentUser.id}
+                            votingPower={votingPower}
+                            members={members}
+                            categoryDelegations={categoryDelegations}
+                            onDelegateCategory={delegateVoteForCategory}
+                        />
                     )}
                 </div>
 
                 <div className="md:col-span-1">
                     <div className="bg-gradient-to-br from-primary-50 to-primary-100/50 p-6 rounded-3xl border border-primary-100/50 shadow-sm relative overflow-hidden">
-                        {/* Playful background blob */}
                         <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-primary-200 rounded-full blur-2xl opacity-50"></div>
 
                         <h2 className="text-xl font-bold text-primary-900 mb-2 relative z-10 flex items-center">
                             <UserPlus className="w-5 h-5 mr-2" />
-                            Liquid Democracy
+                            Global Delegation
                         </h2>
                         <p className="text-primary-700 text-sm mb-6 relative z-10">
-                            Don't have time to review proposals? Delegate your voting power to someone you trust on the floor.
+                            Trust someone across all categories. You can also delegate per-proposal directly in each vote card below.
                         </p>
 
                         <div className="space-y-3 relative z-10">
@@ -75,13 +82,13 @@ export default function Dashboard() {
                                 <div className="mb-4 p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-primary-100">
                                     <div className="text-xs font-semibold text-primary-600 uppercase mb-1">Currently Delegating To:</div>
                                     <div className="text-slate-900 font-medium truncate">
-                                        {members.find(m => m.id === currentUser.delegated_to)?.email || 'Unknown User'}
+                                        {members.find(m => m.id === currentUser.delegated_to)?.email.split('@')[0] || 'Unknown User'}
                                     </div>
                                     <button
                                         onClick={() => handleDelegate(null)}
-                                        className="mt-3 text-xs font-medium text-danger-500 hover:text-danger-600 underline"
+                                        className="mt-3 text-xs font-medium text-red-500 hover:text-red-600 underline"
                                     >
-                                        Revoke Delegation
+                                        Revoke Global Delegation
                                     </button>
                                 </div>
                             )}
@@ -102,7 +109,7 @@ export default function Dashboard() {
                                         {member.email.split('@')[0]}
                                     </span>
                                     <span className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                                        Delegate
+                                        Delegate All
                                     </span>
                                 </button>
                             ))}

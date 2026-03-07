@@ -56,34 +56,47 @@ export function useProposals(currentUserId: string) {
             setUserVotes(voteMap);
         }
 
-        // 4. Fetch total votes for active proposals to calculate thresholds
-        await calculateAllVotes(props as unknown as Proposal[]);
+        // 4. Fetch weighted vote totals for display (read-only, DB trigger handles evaluation)
+        await fetchVoteTotals(props as unknown as Proposal[]);
 
-        // 5. Fetch total approved users for threshold math (50%)
-        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', true);
+        // 5. Fetch total approved users for threshold display
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_approved', true);
         setTotalApprovedUsers(count || 0);
     };
 
-    const calculateAllVotes = async (props: Proposal[] | null) => {
+    // Fetches vote totals for UI display only — no status mutation happens here.
+    // All proposal status changes happen server-side via the DB trigger.
+    const fetchVoteTotals = async (props: Proposal[] | null) => {
         if (!props) return;
         const active = props.filter(p => p.status === 'active');
         if (active.length === 0) return;
 
-        // Fetch all votes for active proposals
         const { data: allVotes } = await supabase
             .from('votes')
-            .select('*, profiles(delegated_to, id)');
+            .select('proposal_id, voter_id, vote');
 
-        if (!allVotes) return;
+        const { data: allProfiles } = await supabase
+            .from('profiles')
+            .select('id, delegated_to');
 
-        // First, map how many delegations everyone has
-        const { data: allProfiles } = await supabase.from('profiles').select('id, delegated_to');
-        const delegationCounts: Record<string, number> = {};
-        if (allProfiles) {
-            allProfiles.forEach(p => {
-                if (p.delegated_to) {
-                    delegationCounts[p.delegated_to] = (delegationCounts[p.delegated_to] || 0) + 1;
-                }
+        const { data: allCatDelegations } = await supabase
+            .from('category_delegations')
+            .select('user_id, category_id, delegated_to');
+
+        if (!allVotes || !allProfiles) return;
+
+        // Build global delegation map: user_id → delegated_to
+        const globalDelegationMap: Record<string, string | null> = {};
+        allProfiles.forEach(p => { globalDelegationMap[p.id] = p.delegated_to; });
+
+        // Build category delegation map: `${user_id}_${category_id}` → delegated_to
+        const catDelegationMap: Record<string, string> = {};
+        if (allCatDelegations) {
+            allCatDelegations.forEach(cd => {
+                catDelegationMap[`${cd.user_id}_${cd.category_id}`] = cd.delegated_to;
             });
         }
 
@@ -91,30 +104,31 @@ export function useProposals(currentUserId: string) {
         active.forEach(p => voteTotals[p.id] = { yes: 0, total: 0 });
 
         allVotes.forEach((v: any) => {
-            if (!voteTotals[v.proposal_id]) return;
-            const weight = 1 + (delegationCounts[v.voter_id] || 0);
+            const proposal = active.find(p => p.id === v.proposal_id);
+            if (!proposal || !voteTotals[v.proposal_id]) return;
+
+            // Effective delegate: category-specific first, then global
+            const catKey = `${v.voter_id}_${proposal.category_id}`;
+            // Count how many people resolve to voting through this voter
+            let weight = 1; // self
+            allProfiles.forEach(p => {
+                if (p.id === v.voter_id) return;
+                const pCatKey = `${p.id}_${proposal.category_id}`;
+                const effectiveDelegate = catDelegationMap[pCatKey] ?? globalDelegationMap[p.id];
+                if (effectiveDelegate === v.voter_id) weight++;
+            });
+            // Suppress self if this voter has delegated away (category or global)
+            const myDelegate = catDelegationMap[catKey] ?? globalDelegationMap[v.voter_id];
+            if (myDelegate && myDelegate !== v.voter_id) {
+                // This voter has delegated: their self-vote is counted under their delegate
+                return;
+            }
+
             voteTotals[v.proposal_id].total += weight;
             if (v.vote) voteTotals[v.proposal_id].yes += weight;
         });
 
         setProposalVotes(voteTotals);
-
-        // Evaluate thresholds automatically
-        for (const p of active) {
-            const counts = voteTotals[p.id];
-            if (!counts) continue;
-
-            const threshold = totalApprovedUsers / 2;
-
-            if (counts.yes > threshold) {
-                await supabase.from('proposals').update({ status: 'passed' }).eq('id', p.id);
-            } else if (new Date(p.expires_at) < new Date()) {
-                await supabase.from('proposals').update({ status: 'rejected' }).eq('id', p.id);
-            }
-        }
-        
-        // If evaluations happened, we should probably refetch to show 'passed' status, 
-        // but for now we rely on the component or another fetchData call.
     };
 
     const createProposal = async (title: string, description: string, amount: number, categoryId: string) => {
@@ -146,8 +160,33 @@ export function useProposals(currentUserId: string) {
     };
 
     const castVote = async (proposalId: string, isYes: boolean) => {
-        // Optimistic UI update
-        setUserVotes({ ...userVotes, [proposalId]: isYes });
+        const alreadyVotedSame = userVotes[proposalId] === isYes;
+
+        if (alreadyVotedSame) {
+            // Clicking the active button → retract the vote
+            setUserVotes(prev => {
+                const next = { ...prev };
+                delete next[proposalId];
+                return next;
+            });
+
+            const { error } = await supabase
+                .from('votes')
+                .delete()
+                .eq('proposal_id', proposalId)
+                .eq('voter_id', currentUserId);
+
+            if (!error) {
+                await fetchData();
+                return true;
+            }
+            // Rollback optimistic update on failure
+            await fetchData();
+            return false;
+        }
+
+        // Casting a new vote (or switching sides)
+        setUserVotes(prev => ({ ...prev, [proposalId]: isYes }));
 
         const { error } = await supabase
             .from('votes')
@@ -158,15 +197,27 @@ export function useProposals(currentUserId: string) {
             }, { onConflict: 'proposal_id, voter_id' });
 
         if (!error) {
-            // Recalculate everything to evaluate threshold
             await fetchData();
             return true;
         }
         return false;
     };
 
+    const deleteProposal = async (proposalId: string) => {
+        const { error } = await supabase
+            .from('proposals')
+            .delete()
+            .eq('id', proposalId);
+
+        if (!error) {
+            setProposals(prev => prev.filter(p => p.id !== proposalId));
+            return true;
+        }
+        return false;
+    };
+
     useEffect(() => {
-        fetchData();
+        if (currentUserId) fetchData();
     }, [currentUserId]);
 
     return {
@@ -177,6 +228,7 @@ export function useProposals(currentUserId: string) {
         totalApprovedUsers,
         createProposal,
         castVote,
+        deleteProposal,
         refreshData: fetchData
     };
 }
