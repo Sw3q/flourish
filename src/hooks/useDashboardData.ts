@@ -120,14 +120,21 @@ export function useDashboardData() {
             return false;
         }
 
-        // Upsert the category delegation
+        // PostgREST silently fails on upsert conflicts for tables without a formal primary key id column.
+        // So we delete existing constraints and then insert the new one.
+        await supabase
+            .from('category_delegations')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('category_id', categoryId);
+
         const { error } = await supabase
             .from('category_delegations')
-            .upsert({
+            .insert([{
                 user_id: currentUser.id,
                 category_id: categoryId,
                 delegated_to: targetUserId,
-            }, { onConflict: 'user_id, category_id' });
+            }]);
 
         if (!error) {
             setCategoryDelegations(prev => ({ ...prev, [categoryId]: targetUserId }));

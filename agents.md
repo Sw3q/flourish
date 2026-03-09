@@ -1,22 +1,40 @@
-# Flourish Fund - Developer Guidelines & Rules
+# Flourish Fund - AI Operating System & Project Rules
 
-## Project Description
-The Flourish Fund is a web application designed to manage the communal pot for the "Human Flourishing Floor" of the frontier tower. Each floor member contributes to a communal fund, and the application serves as a mechanism to gather grassroots consensus on how to spend those funds.
+This document serves as the critical project-specific AI operating system for the Flourish Fund repository. It enforces consistent behavior, code style, architecture, and forbidden patterns.
 
-## Tech Stack
+## 1. Project Overview & Core Mechanics
+The Flourish Fund manages a communal pot for the "Human Flourishing Floor". 
+*   **Authentication**: Strict manual verification. Admin must approve new accounts before they can view or vote.
+*   **Proposals**: Semi-structured funding requests with predefined categories.
+*   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category).
+*   **Passage Thresholds**: >50% vote threshold and 40% quorum required. Evaluated firmly via backend Postgres triggers.
+*   **Virtual Funds**: Fund tracking is completely virtual and managed manually by admins.
+
+## 2. Tech Stack Ecosystem
 *   **Frontend**: React, Vite, TypeScript
-*   **Styling**: Tailwind CSS (customized with a playful, vibrant, glassmorphic UI approach).
-*   **Backend / DB**: Supabase (Postgres, Auth, Edge Functions)
+*   **Styling**: Tailwind CSS (Tailwind variables managed in `index.css`)
+*   **Backend Database / Auth**: Supabase (Postgres, Auth, Edge Functions)
 
-## Core Mechanisms
-1.  **Strict Authentication & Manual Verification**: Members can sign up, but their accounts must be manually verified and approved by an Admin user before they can view or propose any spending.
-2.  **Semi-structured Proposals**: Funding requests must fall into pre-defined categories set by the Admin.
-3.  **Liquid Democracy**: Users can manually vote (Yes/No) on active proposals OR delegate their voting power to another trusted member. Voting power is dynamically aggregated.
-4.  **Threshold Passage**: A proposal passes immediately if it secures >50% of the entire Floor's voting power block.
-5.  **Virtual Funds**: Fund tracking is completely virtual and entered manually by the admin. There is no Stripe/bank integration.
+## 3. Recommended Workflow & Thought Hierarchy 
+For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute → Validate & Ship** workflow.
+1. **Plan**: Use `Planning.md` to draft high-level mechanics. 
+2. **Break Down Tasks**: Use `tasks.md` to define atomic, checklist tasks.
+3. **Execute**: Write tests, then execute the implementation.
+4. **Validate**: Run tests (`npm run test`) and verify visually. 
 
-## Operating Rules
-1.  **Test-Driven Culture**: As of Phase 8+, unit tests MUST be written to accompany all logic changes, components, and regressions. Test cases must be designed BEFORE jumping into the code edits.
-2.  **Premium Aesthetics**: UI components must utilize the `primary` and `accent` gradient mappings setup in `index.css`, and not use basic colors. Maintain a highly dynamic, smooth, interactive, glassmorphic aesthetic on all components.
-3.  **Continuous Evaluation**: Always write tests for critical regression points. For example, authentication boundaries or vote weighting logic.
-4.  **Artifact Alignment**: The `task.md` and `implementation_plan.md` must be kept rigidly up to date as project phases evolve.
+*Always combine this with the Think Hard Hierarchy (think → think hard → ultrathink) before major refactors.*
+
+## 4. Code Style & Requirements
+*   **Test-Driven Culture**: Unit tests (Vitest/React Testing library) must accompany all logic changes, hooks, and regressions.
+*   **Aesthetics**: Glassmorphic, highly dynamic UI. DO NOT use basic, generic Tailwind colors. Always rely on `primary` and `accent` gradient mappings defined in `index.css`.
+*   **Components**: Keep components functional and pure. Extract complex data interactions into custom hooks (e.g. `useProposals.ts`, `useDashboardData.ts`).
+
+## 5. Architectural Strictures
+*   **Server-Side Source of Truth**: NEVER calculate vital governance states (quorum, vote passage, threshold) on the frontend. Use Supabase Postgres Functions (`evaluate_proposal`) and Triggers to evaluate proposal success and automatically generate withdrawal transactions upon passage.
+*   **Vote Manipulation**: Vote toggling in `useProposals.ts` must use explicit `.delete()` then `.insert()` commands. Avoid using `.upsert()` or `.update()` for votes or `category_delegations` due to PostgREST silent failures on tables without explicit serial primary keys.
+
+## 6. Forbidden Patterns
+*   **Direct Mutation of Props/State**: Never mutate React component state directly; always use functional updates.
+*   **Client-Side Evaluation**: Do not determine if a proposal "Passed" on the client. Trust the `status` column strictly enforced by Postgres.
+*   **Unapproved Actions**: Do not allow unapproved users to load proposals, vote, or query system balances in the UI logic. 
+*   **Over-Engineering UI**: "Keep it simple and maintainable." Do not add complicated state machines to standard buttons or generic interaction surfaces unless strictly necessary.
