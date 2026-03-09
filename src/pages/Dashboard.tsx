@@ -1,4 +1,4 @@
-import { Users, UserPlus, Target, Flame } from 'lucide-react';
+import { Users, UserPlus, Flame, BadgeDollarSign } from 'lucide-react';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 
@@ -37,7 +37,7 @@ export default function Dashboard() {
                 <div className="flex gap-4 w-full md:w-auto">
                     <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48">
                         <div className="flex items-center text-slate-500 text-sm font-medium mb-1">
-                            <Target className="w-4 h-4 mr-2 text-accent-500" /> Virtual Pot
+                            <BadgeDollarSign className="w-4 h-4 mr-2 text-green-600" /> Virtual Pot
                         </div>
                         <div className="text-2xl font-bold text-slate-900">${fundBalance.toFixed(2)}</div>
                     </div>
