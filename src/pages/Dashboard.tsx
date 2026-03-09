@@ -12,6 +12,7 @@ export default function Dashboard() {
         categoryDelegations,
         delegateVote,
         delegateVoteForCategory,
+        getVotingPower,
     } = useDashboardData();
 
     const handleDelegate = async (targetUserId: string | null) => {
@@ -57,10 +58,10 @@ export default function Dashboard() {
                     {currentUser && (
                         <ProposalsList
                             currentUserId={currentUser.id}
-                            votingPower={votingPower}
                             members={members}
                             categoryDelegations={categoryDelegations}
                             onDelegateCategory={delegateVoteForCategory}
+                            getVotingPower={getVotingPower}
                         />
                     )}
                 </div>

@@ -143,6 +143,44 @@ export function useDashboardData() {
         return false;
     };
 
+    // Helper to calculate voting power for a specific category
+    // weight = 1 (self) + count of people who delegated to me (globally or for this specific category)
+    const getVotingPower = async (categoryId: string) => {
+        if (!currentUser) return 1;
+
+        const { data: globalDelegations } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('delegated_to', currentUser.id);
+
+        const { data: categoryDelegations } = await supabase
+            .from('category_delegations')
+            .select('user_id')
+            .eq('delegated_to', currentUser.id)
+            .eq('category_id', categoryId);
+
+        // We need to count unique people who effectively delegate to us for this category.
+        // A person P delegates to us if:
+        // 1. They have a category-specific delegation to us for this category.
+        // 2. OR they have a global delegation to us AND NO category-specific override for this category.
+
+        const globalIds = (globalDelegations || []).map(d => d.id);
+        const catIds = (categoryDelegations || []).map(d => d.user_id);
+
+        // People delegating to us globally who DON'T have a category override
+        const { data: overrides } = await supabase
+            .from('category_delegations')
+            .select('user_id')
+            .in('user_id', globalIds)
+            .eq('category_id', categoryId);
+        
+        const overrideIds = new Set((overrides || []).map(o => o.user_id));
+        const effectiveGlobalDelegators = globalIds.filter(id => !overrideIds.has(id));
+
+        const uniqueDelegators = new Set([...catIds, ...effectiveGlobalDelegators]);
+        return 1 + uniqueDelegators.size;
+    };
+
     return {
         currentUser,
         members,
@@ -152,5 +190,6 @@ export function useDashboardData() {
         categoryDelegations,
         delegateVote,
         delegateVoteForCategory,
+        getVotingPower,
     };
 }

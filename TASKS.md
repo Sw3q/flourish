@@ -30,3 +30,21 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
 ### Final Verification
 - [ ] Run full `npm run test` suite to guarantee no regressions.
 - [ ] Visually verify responsive, glassmorphic UI alignment.
+
+## Phase 12: Voting System Refinement [DONE]
+
+### Logic & Governance
+- [x] **Fix Double Counting**: Update `evaluate_proposal` SQL to ensure direct votes override delegations (no double-counting). [x]
+- [x] **Refine Pass Threshold**: Update SQL logic to pass if `Yes > No` AND `Quorum (40%)` met, rather than >50% of entire community. [x]
+- [x] **Conviction/Time-Weighting**: 
+  - [x] Migration: Add `quorum_reached_at` to `proposals`. [x]
+  - [x] SQL: Update `evaluate_proposal` to track when quorum + majority Yes is first met. [x]
+  - [x] SQL: Auto-pass if quorum + majority Yes is sustained for 24 hours. [x]
+- [x] **Tests**: Write SQL tests for delegation-override and time-weighted passage. [x]
+
+### Frontend Enhancements
+- [x] **Contextual Power**: Update `useDashboardData.ts` to provide `getVotingPower(categoryId)`. [x]
+- [x] **UI Feedback**: Update `ProposalsList.tsx` to display the specific weight of the user's vote for that proposal's category. [x]
+- [x] **Governance Viz**: Add a "Quorum Met" progress indicator to proposal cards. [x]
+- [x] **Vote Switching**: Allow direct Yes ↔ No switching without intermediate retraction. [x]
+- [x] **Unit Testing**: Implement robust Proxy-based mocks for hook verification. [x]

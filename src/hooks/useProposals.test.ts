@@ -177,4 +177,73 @@ describe('useProposals Hook', () => {
             expect(mockProposalUpdate).not.toHaveBeenCalled();
         });
     });
+
+    it('calculates weighted vote totals correctly with delegation overrides', async () => {
+        const activeProposal = {
+            id: 'prop-weighted', title: 'T', description: 'D', amount: 100, status: 'active',
+            category_id: 'cat-x', categories: { name: 'X', color_theme: 'c' },
+            profiles: { email: 'creator@t.com' }, created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 86400000).toISOString(),
+            quorum_reached_at: null
+        };
+
+        const mockVotes = [
+            { proposal_id: 'prop-weighted', voter_id: 'voter1', vote: true },
+            { proposal_id: 'prop-weighted', voter_id: 'voter2', vote: false }
+        ];
+        const mockProfiles = [
+            { id: 'voter1', delegated_to: null },
+            { id: 'voter2', delegated_to: null },
+            { id: 'voter3', delegated_to: 'voter1' }, // global
+            { id: 'voter4', delegated_to: null }
+        ];
+        const mockCatDelegations = [
+            { user_id: 'voter4', category_id: 'cat-x', delegated_to: 'voter2' }
+        ];
+
+        const createBulletproofMock = (data: any = [], count: number = 0) => {
+            const chain: any = {
+                data, count, error: null,
+                then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
+                catch: (cb: any) => Promise.resolve(cb(null)),
+                finally: (cb: any) => Promise.resolve(cb()),
+            };
+            return new Proxy(chain, {
+                get(target, prop) {
+                    if (prop in target) return target[prop];
+                    if (typeof prop === 'string') return () => new Proxy(target, this);
+                    return target[prop];
+                }
+            });
+        };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'proposals') return createBulletproofMock([activeProposal]);
+            if (table === 'categories') return createBulletproofMock([]);
+            if (table === 'votes') {
+                return new Proxy({}, {
+                    get: (_, prop) => (prop === 'select' 
+                        ? (q: string) => (q && q.includes('voter_id') ? createBulletproofMock(mockVotes) : createBulletproofMock([]))
+                        : () => createBulletproofMock([]))
+                });
+            }
+            if (table === 'profiles') {
+                return new Proxy({}, {
+                    get: (_, prop) => (prop === 'select'
+                        ? (q: string) => (q === 'count' || (q && typeof q === 'object')) ? createBulletproofMock([], 4) : createBulletproofMock(mockProfiles)
+                        : () => createBulletproofMock([]))
+                });
+            }
+            if (table === 'category_delegations') return createBulletproofMock(mockCatDelegations);
+            return createBulletproofMock([]);
+        });
+
+        const { result } = renderHook(() => useProposals('user1'));
+
+        await waitFor(() => {
+            const votes = result.current.proposalVotes['prop-weighted'];
+            expect(votes).toBeDefined();
+            expect(votes?.yes).toBe(2);
+            expect(votes?.total).toBe(4);
+        });
+    });
 });

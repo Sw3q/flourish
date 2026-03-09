@@ -61,6 +61,64 @@ function ProposalTimer({ expiresAt, createdAt }: { expiresAt: string; createdAt:
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Conviction Progress Sub-Component
+// ─────────────────────────────────────────────────────────────────────────────
+function ConvictionStatus({ quorumReachedAt }: { quorumReachedAt: string | null }) {
+    const [progress, setProgress] = useState(0);
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        if (!quorumReachedAt) {
+            setProgress(0);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const start = new Date(quorumReachedAt).getTime();
+            const now = Date.now();
+            const duration = 24 * 60 * 60 * 1000; // 24 hours
+            const elapsed = now - start;
+            const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
+            setProgress(pct);
+
+            const remaining = duration - elapsed;
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / 3600000);
+                const mins = Math.floor((remaining % 3600000) / 60000);
+                setTimeLeft(`${hours}h ${mins}m until pass`);
+            } else {
+                setTimeLeft('Passing soon...');
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [quorumReachedAt]);
+
+    if (!quorumReachedAt) return (
+        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            <Users className="w-3 h-3" />
+            Waiting for Quorum...
+        </div>
+    );
+
+    return (
+        <div className="space-y-1.5 w-full">
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-primary-600">
+                <span>Conviction Building</span>
+                <span>{progress}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-primary-100 rounded-full overflow-hidden">
+                <div
+                    className="h-full bg-primary-500 transition-all duration-1000 ease-linear"
+                    style={{ width: `${progress}%` }}
+                ></div>
+            </div>
+            <div className="text-[10px] text-primary-500 font-medium">{timeLeft}</div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Delegation Pills Sub-Component (shown inside each proposal card)
 // ─────────────────────────────────────────────────────────────────────────────
 function DelegationPills({
@@ -122,20 +180,59 @@ function DelegationPills({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Dynamic Vote Button Sub-Component (shows per-category weight)
+// ─────────────────────────────────────────────────────────────────────────────
+function VoteButton({
+    proposalId,
+    categoryId,
+    isYes,
+    isActive,
+    onVote,
+    getVotingPower,
+}: {
+    proposalId: string;
+    categoryId: string;
+    isYes: boolean;
+    isActive: boolean;
+    onVote: (id: string, yes: boolean) => Promise<void>;
+    getVotingPower: (categoryId: string) => Promise<number>;
+}) {
+    const [power, setPower] = useState<number | null>(null);
+
+    useEffect(() => {
+        getVotingPower(categoryId).then(setPower);
+    }, [categoryId, getVotingPower]);
+
+    return (
+        <button
+            onClick={() => onVote(proposalId, isYes)}
+            title={isActive ? `Click to retract your ${isYes ? 'Yes' : 'No'} vote` : `Vote ${isYes ? 'Yes' : 'No'}`}
+            className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${isActive
+                ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-offset-1 ring-green-400'
+                : 'bg-slate-50 text-slate-600 hover:bg-green-100 hover:text-green-700 border border-slate-100'
+                }`}
+        >
+            <ThumbsUp className={`w-4 h-4 mr-2 ${isActive ? 'animate-bounce' : ''}`} />
+            Yes ({power ?? '...'})
+        </button>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main ProposalsList Component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ProposalsList({
     currentUserId,
-    votingPower,
     members,
     categoryDelegations,
     onDelegateCategory,
+    getVotingPower,
 }: {
     currentUserId: string;
-    votingPower: number;
     members: Profile[];
     categoryDelegations: Record<string, string>;
     onDelegateCategory: (categoryId: string, targetId: string | null) => Promise<boolean>;
+    getVotingPower: (categoryId: string) => Promise<number>;
 }) {
     const {
         proposals,
@@ -303,17 +400,14 @@ export default function ProposalsList({
 
                                 {/* Vote buttons */}
                                 <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleVote(proposal.id, true)}
-                                        title={userVotes[proposal.id] === true ? 'Click to retract your Yes vote' : 'Vote Yes'}
-                                        className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${userVotes[proposal.id] === true
-                                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-offset-1 ring-green-400'
-                                            : 'bg-slate-50 text-slate-600 hover:bg-green-100 hover:text-green-700 border border-slate-100'
-                                            }`}
-                                    >
-                                        <ThumbsUp className={`w-4 h-4 mr-2 ${userVotes[proposal.id] === true ? 'animate-bounce' : ''}`} />
-                                        Yes ({votingPower})
-                                    </button>
+                                    <VoteButton
+                                        proposalId={proposal.id}
+                                        categoryId={proposal.category_id}
+                                        isYes={true}
+                                        isActive={userVotes[proposal.id] === true}
+                                        onVote={handleVote}
+                                        getVotingPower={getVotingPower}
+                                    />
                                     <button
                                         onClick={() => handleVote(proposal.id, false)}
                                         title={userVotes[proposal.id] === false ? 'Click to retract your No vote' : 'Vote No'}
@@ -325,6 +419,11 @@ export default function ProposalsList({
                                         <ThumbsDown className="w-4 h-4 mr-2" />
                                         No
                                     </button>
+                                </div>
+
+                                {/* Conviction / Quorum Status */}
+                                <div className="mt-2">
+                                    <ConvictionStatus quorumReachedAt={proposal.quorum_reached_at} />
                                 </div>
 
                                 {/* Per-category delegation pills */}

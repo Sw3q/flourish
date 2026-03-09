@@ -7,7 +7,7 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Authentication**: Strict manual verification. Admin must approve new accounts before they can view or vote (`PendingApproval.tsx`).
 *   **Proposals**: Commual spending requests with predefined categories (`AdminDashboard.tsx`, `ProposalsList.tsx`).
 *   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category using `useDashboardData.ts`).
-*   **Passage Thresholds**: >50% vote threshold and 40% quorum required. Evaluated firmly via backend Postgres triggers (`evaluate_proposal`).
+*   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.
 
 ## 2. Tech Stack Ecosystem
@@ -31,7 +31,8 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Components**: Keep components practical. Extract complex Supabase data interactions into custom hooks (e.g. `useProposals.ts`, `useAdminActions.ts`).
 
 ## 5. Architectural Strictures
-*   **Server-Side Source of Truth**: NEVER calculate vital governance states (quorum, vote passage, threshold) on the frontend. Use Supabase Postgres Functions (`evaluate_proposal`) and Triggers to evaluate proposal success and automatically generate withdrawal transactions upon passage.
+*   **Server-Side Source of Truth**: NEVER calculate vital governance states (quorum, vote passage, threshold) on the frontend. Use Supabase Postgres Functions (`evaluate_proposal`) and Triggers to evaluate proposal success. Success is defined by maintaining 40% quorum and majority Yes for 24 consecutive hours.
+*   **Delegation Override**: Logic must ensure that direct votes cast by a user ALWAYS override any power they would have delegated. This applies to both the SQL `evaluate_proposal` logic and frontend `useProposals` weight calculations.
 *   **Vote Manipulation / DB Updates**: Vote toggling and `category_delegations` assignment must use explicit `.delete()` then `.insert()` commands. Avoid using `.update()` or `.upsert()` for junction tables missing formal serial primary keys, due to PostgREST silent failure bugs.
 
 ## 6. Forbidden Patterns

@@ -80,7 +80,7 @@ describe('useDashboardData Hook', () => {
         expect(success).toBe(false);
     });
 
-    it('should allow voting delegation (global)', async () => {
+    it('should allow voting delegation (global)', async ( ) => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useDashboardData());
 
@@ -90,5 +90,85 @@ describe('useDashboardData Hook', () => {
         });
 
         expect(success).toBe(false);
+    });
+
+    it('should calculate category-specific voting power correctly', async () => {
+        const userId = 'me';
+        (supabase.auth.getUser as any).mockResolvedValue({ data: { user: { id: userId } } });
+
+        const createBulletproofMock = (data: any = [], count: number = 0) => {
+            const chain: any = {
+                data, count, error: null,
+                // These will be returned by the proxy if called
+                then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
+                catch: (cb: any) => Promise.resolve(cb(null)),
+                finally: (cb: any) => Promise.resolve(cb()),
+            };
+            
+            return new Proxy(chain, {
+                get(target, prop) {
+                    if (prop in target) return target[prop];
+                    if (typeof prop === 'string') {
+                        // Return a function that returns the proxy for chaining
+                        return () => new Proxy(target, this);
+                    }
+                    return target[prop];
+                }
+            });
+        };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'profiles') {
+                return new Proxy({}, {
+                    get: (_, prop) => {
+                        if (prop === 'select') return () => new Proxy({}, {
+                            get: (_, p) => {
+                                if (p === 'eq') return (col: string, val: any) => {
+                                    if (col === 'id' && val === userId) return createBulletproofMock({ id: userId, email: 'me@test.com' });
+                                    if (col === 'delegated_to' && val === userId) return createBulletproofMock([{ id: 'userA' }, { id: 'userB' }]);
+                                    return createBulletproofMock([]);
+                                };
+                                return () => createBulletproofMock([]);
+                            }
+                        });
+                        return () => createBulletproofMock([]);
+                    }
+                });
+            }
+            if (table === 'category_delegations') {
+                return new Proxy({}, {
+                    get: (_, prop) => {
+                        if (prop === 'select') return () => new Proxy({}, {
+                            get: (_, p) => {
+                                if (p === 'eq') return (col: string, val: any) => {
+                                    if (col === 'delegated_to' && val === userId) {
+                                        return new Proxy({}, {
+                                            get: (_, p2) => (p2 === 'eq' ? () => createBulletproofMock([{ user_id: 'userC' }]) : () => createBulletproofMock([]))
+                                        });
+                                    }
+                                    return createBulletproofMock([]);
+                                };
+                                if (p === 'in') return () => new Proxy({}, {
+                                    get: (_, p2) => (p2 === 'eq' ? () => createBulletproofMock([{ user_id: 'userB' }]) : () => createBulletproofMock([]))
+                                });
+                                return () => createBulletproofMock([]);
+                            }
+                        });
+                        return () => createBulletproofMock([]);
+                    }
+                });
+            }
+            return createBulletproofMock([]);
+        });
+
+        const { result } = renderHook(() => useDashboardData());
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        let power;
+        await act(async () => {
+            power = await result.current.getVotingPower('cat1');
+        });
+
+        expect(power).toBe(3);
     });
 });

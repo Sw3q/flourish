@@ -15,6 +15,7 @@ export type Proposal = {
     status: 'active' | 'passed' | 'rejected';
     created_at: string;
     expires_at: string;
+    quorum_reached_at: string | null;
     category_id: string;
     creator_id: string;
     categories: { name: string; color_theme: string };
@@ -85,17 +86,26 @@ export function useProposals(currentUserId: string) {
             const proposal = active.find(p => p.id === v.proposal_id);
             if (!proposal || !voteTotals[v.proposal_id]) return;
 
-            const catKey = `${v.voter_id}_${proposal.category_id}`;
-            const myDelegate = catDelegationMap[catKey] ?? globalDelegationMap[v.voter_id];
-            // Skip voters who have delegated away — their weight is counted under their delegate
-            if (myDelegate && myDelegate !== v.voter_id) return;
+            // In the new logic, anyone who cast a direct vote HAS weight.
+            // But we need to calculate the weight of that direct voter by counting 
+            // their delegators WHO HAVEN'T VOTED themselves.
 
             let weight = 1;
             allProfiles.forEach(p => {
+                // If this is the voter themselves, skip
                 if (p.id === v.voter_id) return;
+
                 const pCatKey = `${p.id}_${proposal.category_id}`;
                 const effectiveDelegate = catDelegationMap[pCatKey] ?? globalDelegationMap[p.id];
-                if (effectiveDelegate === v.voter_id) weight++;
+                
+                // If this person p delegates to our voter v
+                if (effectiveDelegate === v.voter_id) {
+                    // ONLY add to weight if p HAS NOT cast their own vote on this proposal
+                    const hasVotedSelf = allVotes.some(av => av.proposal_id === v.proposal_id && av.voter_id === p.id);
+                    if (!hasVotedSelf) {
+                        weight++;
+                    }
+                }
             });
 
             voteTotals[v.proposal_id].total += weight;

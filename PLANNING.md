@@ -3,7 +3,7 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Implement Recurring Expenses:** The Flourish Fund currently supports one-off proposals, but the community has ongoing costs (e.g., internet, communal subscriptions, cleaning supplies). We need a mechanism to securely manage and track recurring expenses directly impacting the virtual fund balance.
+- **Phase 12 Complete:** Successfully refined the voting system to include conviction voting (24h majority/quorum maintenance), category-specific voting power, and fixed delegation-override logic to prevent double-counting.
 
 ## Discovery & Research
 - Currently, all deductions are triggered by active one-off `proposals` passing via community vote.
