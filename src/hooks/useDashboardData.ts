@@ -19,6 +19,7 @@ export function useDashboardData() {
     const [members, setMembers] = useState<Profile[]>([]);
     const [votingPower, setVotingPower] = useState<number>(1);
     const [fundBalance, setFundBalance] = useState<number>(0);
+    const [monthlyBurnRate, setMonthlyBurnRate] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     // Map of category_id → delegated_to user_id (for MY delegations)
     const [categoryDelegations, setCategoryDelegations] = useState<Record<string, string>>({});
@@ -76,6 +77,17 @@ export function useDashboardData() {
                 return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
             }, 0);
             setFundBalance(balance);
+        }
+
+        // Fetch active recurring expenses for monthly burn rate
+        const { data: expenses } = await supabase
+            .from('recurring_expenses')
+            .select('amount')
+            .eq('is_active', true);
+
+        if (expenses) {
+            const burn = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+            setMonthlyBurnRate(burn);
         }
 
         setLoading(false);
@@ -186,6 +198,7 @@ export function useDashboardData() {
         members,
         votingPower,
         fundBalance,
+        monthlyBurnRate,
         loading,
         categoryDelegations,
         delegateVote,

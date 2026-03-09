@@ -1,4 +1,4 @@
-import { Users, UserPlus, Target } from 'lucide-react';
+import { Users, UserPlus, Target, Flame } from 'lucide-react';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 
@@ -8,6 +8,7 @@ export default function Dashboard() {
         members,
         votingPower,
         fundBalance,
+        monthlyBurnRate,
         loading,
         categoryDelegations,
         delegateVote,
@@ -39,6 +40,16 @@ export default function Dashboard() {
                             <Target className="w-4 h-4 mr-2 text-accent-500" /> Virtual Pot
                         </div>
                         <div className="text-2xl font-bold text-slate-900">${fundBalance.toFixed(2)}</div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48 relative overflow-hidden">
+                        <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-rose-100 rounded-full mix-blend-multiply opacity-50"></div>
+                        <div className="flex items-center text-slate-500 text-sm font-medium mb-1 relative z-10">
+                            <Flame className="w-4 h-4 mr-2 text-rose-500" /> Monthly Burn
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900 relative z-10">
+                            ${monthlyBurnRate.toFixed(2)}
+                        </div>
                     </div>
 
                     <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48 relative overflow-hidden">
