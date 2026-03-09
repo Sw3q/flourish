@@ -9,6 +9,7 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category using `useDashboardData.ts`).
 *   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.
+*   **Recurring Expenses**: Admins can define and manage monthly recurring expenses, which are manually processed to deduct from the communal pot, providing transparency to all users on the dashboard.
 
 ## 2. Tech Stack Ecosystem
 *   **Frontend**: React, Vite, TypeScript

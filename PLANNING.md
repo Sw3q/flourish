@@ -4,6 +4,7 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 
 ## Current Objective
 - **Phase 12 Complete:** Successfully refined the voting system to include conviction voting (24h majority/quorum maintenance), category-specific voting power, and fixed delegation-override logic to prevent double-counting.
+- **Phase 11 & 14 Complete:** Implemented Recurring Expenses with admin controls, inline editing, and transparency metrics. Also resolved RLS and query bugs for the Admin Dashboard.
 
 ## Discovery & Research
 - Currently, all deductions are triggered by active one-off `proposals` passing via community vote.
