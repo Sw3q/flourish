@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2, ArrowRight, HeartHandshake } from 'lucide-react';
+import { CONFIG } from '../config';
 
 export default function Login() {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (CONFIG.BYPASS_AUTH) {
+            navigate('/', { replace: true });
+        }
+    }, [navigate]);
+
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,14 +40,18 @@ export default function Login() {
                     email,
                     password,
                     options: {
-                        emailRedirectTo: window.location.origin,
+                        emailRedirectTo: `${window.location.origin}/pending`,
                     },
                 });
                 if (error) throw error;
                 setMessage('Check your email for the confirmation link!');
             }
         } catch (err: any) {
-            setError(err.message);
+            if (err.message.toLowerCase().includes('rate limit')) {
+                setError('Registration limit reached for this hour. Please try again later or contact an admin to be manually added.');
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }

@@ -6,6 +6,10 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
 - [ ] Await next task.
 
 ## Completed Tasks History
+- **Phase 19**: Implemented `BYPASS_AUTH` mode in `config.ts`, `AuthLayout.tsx`, `useDashboardData.ts`, and `useAdminActions.ts`.
+- **Phase 18**: Improved `Login.tsx` error handling for rate limit errors and provided SMTP guidance.
+- **Phase 18**: Improved `Login.tsx` error handling for rate limit errors and provided SMTP guidance.
+- **Phase 17**: Updated `Login.tsx` to redirect to `${window.location.origin}/pending` in `signUp`.
 - **Phase 16**: Implemented dynamic `emailRedirectTo` URL in `supabase.auth.signUp` in `Login.tsx`.
 - **Phase 11**: Created `recurring_expenses` DB schema, admin logic in hook, and Admin UI for recurring expenses.
 - **Phase 12**: Refined voting with 24h conviction voting, delegation overrides, contextual power, and vote switching UI.

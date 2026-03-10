@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { CONFIG } from '../config';
 
 export type Profile = {
     id: string;
@@ -70,6 +71,12 @@ export function useAdminActions() {
     };
 
     const checkAdminStatus = async () => {
+        if (CONFIG.BYPASS_AUTH) {
+            setIsAdmin(true);
+            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
+            return;
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 

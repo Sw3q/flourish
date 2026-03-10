@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { CONFIG } from '../config';
 
 export type Profile = {
     id: string;
@@ -29,7 +30,14 @@ export function useDashboardData() {
     }, []);
 
     const fetchDashboardData = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        let user;
+        if (CONFIG.BYPASS_AUTH) {
+            user = { id: '00000000-0000-0000-0000-000000000000', email: 'demo@flourish.test' };
+        } else {
+            const { data } = await supabase.auth.getUser();
+            user = data.user;
+        }
+        
         if (!user) return;
 
         // Fetch current user profile
@@ -39,7 +47,17 @@ export function useDashboardData() {
             .eq('id', user.id)
             .single();
 
-        if (profile) setCurrentUser(profile as Profile);
+        if (profile) {
+            setCurrentUser(profile as Profile);
+        } else if (CONFIG.BYPASS_AUTH) {
+            // Provide a minimal mock profile if DB is empty
+            setCurrentUser({
+                id: user.id,
+                email: user.email!,
+                role: 'admin',
+                delegated_to: null
+            });
+        }
 
         // Fetch all approved members for delegation list
         const { data: allMembers } = await supabase

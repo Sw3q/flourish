@@ -2,6 +2,7 @@ import { Navigate, Outlet, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { CONFIG } from '../config';
 
 export default function AuthLayout() {
     const [session, setSession] = useState<any>(null);
@@ -10,6 +11,14 @@ export default function AuthLayout() {
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
     useEffect(() => {
+        if (CONFIG.BYPASS_AUTH) {
+            setSession({ user: { id: '00000000-0000-0000-0000-000000000000', email: 'demo@flourish.test' } });
+            setIsApproved(true);
+            setIsAdmin(true);
+            setLoading(false);
+            return;
+        }
+
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             if (session) checkApproval(session.user.id);
