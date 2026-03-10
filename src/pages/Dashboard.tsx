@@ -1,4 +1,4 @@
-import { Users, UserPlus, Flame, BadgeDollarSign } from 'lucide-react';
+import { Users, UserPlus, BadgeDollarSign, RotateCcw } from 'lucide-react';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 
@@ -45,7 +45,7 @@ export default function Dashboard() {
                     <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48 relative overflow-hidden">
                         <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-rose-100 rounded-full mix-blend-multiply opacity-50"></div>
                         <div className="flex items-center text-slate-500 text-sm font-medium mb-1 relative z-10">
-                            <Flame className="w-4 h-4 mr-2 text-rose-500" /> Monthly Burn
+                            <RotateCcw className="w-4 h-4 mr-2 text-rose-500" /> Recurring Expenses
                         </div>
                         <div className="text-2xl font-bold text-slate-900 relative z-10">
                             ${monthlyBurnRate.toFixed(2)}

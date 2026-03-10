@@ -5,7 +5,7 @@ This document serves as the project-specific AI operating system for the Flouris
 ## 1. Project Overview & Core Mechanics
 The Flourish Fund is a React/Vite/TypeScript web application managing a communal pot for the "Human Flourishing Floor". 
 *   **Authentication**: Strict manual verification. Admin must approve new accounts before they can view or vote (`PendingApproval.tsx`).
-*   **Proposals**: Commual spending requests with predefined categories (`AdminDashboard.tsx`, `ProposalsList.tsx`).
+*   **Proposals**: Communal spending requests with predefined categories and customizable expiration durations (minimum 3 days) (`AdminDashboard.tsx`, `ProposalsList.tsx`).
 *   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category using `useDashboardData.ts`).
 *   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.

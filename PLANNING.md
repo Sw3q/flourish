@@ -3,31 +3,10 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 12 Complete:** Successfully refined the voting system to include conviction voting (24h majority/quorum maintenance), category-specific voting power, and fixed delegation-override logic to prevent double-counting.
-- **Phase 11 & 14 Complete:** Implemented Recurring Expenses with admin controls, inline editing, and transparency metrics. Also resolved RLS and query bugs for the Admin Dashboard.
+- None currently active.
 
-## Discovery & Research
-- Currently, all deductions are triggered by active one-off `proposals` passing via community vote.
-- The `transactions` table tracks `deposits` (manual by admin) and `withdrawals` (automatic when proposal passes).
-- Recurring expenses shouldn't require a monthly vote if they are pre-approved fundamental community costs.
-- **Who manages them?** Admins should have the ability to create, edit, and cancel recurring expenses.
-- **How are funds deducted?** 
-  - Option A: Automatically run a Cron schedule (Supabase pg_cron) to deduct funds every month.
-  - Option B: Admins manually trigger the "pay period" which deducts all active recurring expenses at once. Option B is safer for a purely virtual fund lacking Stripe auto-billing integrations.
-
-## Proposed Approach
-- **Backend Schema Changes**: 
-  - Create a new `recurring_expenses` table tracking `title`, `amount`, `category_id`, `frequency` (monthly), and `next_due_date` or `is_active`.
-- **Admin Action (Manual Processing)**: To keep things simple and avoid complex pg_cron setups on the free Supabase tier, we will let Admins see a list of "Due" recurring expenses on their dashboard and process them with a single click. Processing an expense will insert a `withdrawal` into the `transactions` table.
-- **UI Integrations**:
-  - Update `useAdminActions.ts` hook to fetch and manage recurring expenses.
-  - Update `AdminDashboard.tsx` to include a new section: "Recurring Expenses".
-  - Update regular User `Dashboard.tsx` to display the "Monthly Burn Rate" (sum of all active recurring expenses) so members have transparency on capital exhaustion.
-
-## Phases
-1. **Database Schema**: Create the table and RLS policies for `recurring_expenses`.
-2. **Hook Subsystem**: Write the CRUD and processing logic inside `useAdminActions.ts`, alongside comprehensive tests.
-3. **UI Implementation**: Build the "Recurring Expenses" manager in the Admin Dashboard, and the "Monthly Burn" transparency metric on the main user Dashboard.
-
-## Open Questions
-- Should recurring expenses require an initial community proposal to establish, or can admins create them immediately by decree? (Assuming Admin decree for simplicity initially, mirroring manual deposit powers).
+## Completed Plans History
+- **Phase 11 & 14 (Recurring Expenses & Admin Enhancements)**: Implemented `recurring_expenses` schema, admin controls, inline editing, and user transparency metrics.
+- **Phase 12 (Voting System Refinement)**: Implemented conviction voting (24h majority/quorum maintenance), category-specific voting power, and delegation-override logic.
+- **Phase 13 (Admin Dashboard Fixes)**: Resolved RLS and query sorting bugs for the Admin Dashboard.
+- **Phase 15 (Proposal Expiration Time)**: Implemented customizable proposal duration times (minimum 3 days) during proposal creation.

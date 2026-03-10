@@ -32,7 +32,7 @@ describe('useProposals Hook', () => {
     it('creates a proposal and prepends it to state', async () => {
         const fakeProposal = {
             id: 'p1', title: 'Chair', description: 'Need chairs', amount: 200, status: 'active',
-            created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 604800000).toISOString(),
+            created_at: new Date().toISOString(), expires_at: new Date(Date.now() + (10 * 86400000)).toISOString(),
             category_id: 'cat1', creator_id: 'user1',
             categories: { name: 'Furniture', color_theme: 'blue' }, profiles: { email: 'u@t.com' }
         };
@@ -49,7 +49,7 @@ describe('useProposals Hook', () => {
         await waitFor(() => expect(result.current.proposals).toHaveLength(0));
 
         await act(async () => {
-            await result.current.createProposal('Chair', 'Need chairs', 200, 'cat1');
+            await result.current.createProposal('Chair', 'Need chairs', 200, 'cat1', 10);
         });
         await waitFor(() => expect(result.current.proposals[0].id).toBe('p1'));
     });

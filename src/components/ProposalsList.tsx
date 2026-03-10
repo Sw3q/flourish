@@ -250,6 +250,7 @@ export default function ProposalsList({
     const [newTitle, setNewTitle] = useState('');
     const [newDesc, setNewDesc] = useState('');
     const [newAmount, setNewAmount] = useState('');
+    const [newDurationDays, setNewDurationDays] = useState('7'); // Default 7 days
     const [newCatId, setNewCatId] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -258,12 +259,13 @@ export default function ProposalsList({
     const handleCreateProposal = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-        const success = await createProposal(newTitle, newDesc, Number(newAmount), newCatId);
+        const success = await createProposal(newTitle, newDesc, Number(newAmount), newCatId, Number(newDurationDays));
         if (success) {
             setIsCreating(false);
             setNewTitle('');
             setNewDesc('');
             setNewAmount('');
+            setNewDurationDays('7');
             setNewCatId('');
             setShowToast(true);
             setTimeout(() => setShowToast(false), 4000);
@@ -333,6 +335,10 @@ export default function ProposalsList({
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Amount Requested ($)</label>
                             <input type="number" required min="1" step="0.01" value={newAmount} onChange={e => setNewAmount(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="150.00" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Duration (Days)</label>
+                            <input type="number" required min="3" value={newDurationDays} onChange={e => setNewDurationDays(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="7" />
                         </div>
                     </div>
                     <button type="submit" disabled={submitting} className="w-full md:w-auto px-6 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50">

@@ -115,9 +115,9 @@ export function useProposals(currentUserId: string) {
         setProposalVotes(voteTotals);
     };
 
-    const createProposal = async (title: string, description: string, amount: number, categoryId: string) => {
+    const createProposal = async (title: string, description: string, amount: number, categoryId: string, durationDays: number) => {
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
 
         const { data, error } = await supabase
             .from('proposals')
