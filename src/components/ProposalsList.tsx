@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Trash2, Users } from 'lucide-react';
+import { Plus, Check, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Trash2, Users, ExternalLink } from 'lucide-react';
 import { useProposals } from '../hooks/useProposals';
 import type { Profile } from '../hooks/useDashboardData';
 
@@ -459,9 +459,22 @@ export default function ProposalsList({
                                     }
                                     <div>
                                         <h4 className="font-semibold text-slate-800">{proposal.title}</h4>
-                                        <span className="text-xs text-slate-500">
-                                            {proposal.status === 'passed' ? '✓ Passed' : '✗ Rejected'} · {new Date(proposal.expires_at).toLocaleDateString()}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500">
+                                                {proposal.status === 'passed' ? '✓ Passed' : '✗ Rejected'} · {new Date(proposal.expires_at).toLocaleDateString()}
+                                            </span>
+                                            {proposal.hypercert_uri && (
+                                                <a
+                                                    href={`https://psky.app/profile/${proposal.hypercert_uri.split('/')[2]}/post/${proposal.hypercert_uri.split('/')[4]}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-600 text-[10px] font-bold uppercase tracking-tight rounded-md border border-primary-100 hover:bg-primary-100 transition-colors"
+                                                >
+                                                    <ExternalLink className="w-2.5 h-2.5" />
+                                                    Hypercert
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="font-bold text-slate-900">${proposal.amount}</div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { CONFIG } from '../config';
+import { type Proposal } from './useProposals';
 
 export type Profile = {
     id: string;
@@ -29,6 +30,7 @@ export function useAdminActions() {
     const [users, setUsers] = useState<Profile[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+    const [proposals, setProposals] = useState<Proposal[]>([]);
     const [fundBalance, setFundBalance] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -48,6 +50,14 @@ export function useAdminActions() {
             .select('*, categories(name, color_theme)')
             .order('created_at', { ascending: false });
         if (data) setRecurringExpenses(data as RecurringExpense[]);
+    };
+
+    const fetchProposals = async () => {
+        const { data } = await supabase
+            .from('proposals')
+            .select('*, categories (name, color_theme), profiles:creator_id (email)')
+            .order('created_at', { ascending: false });
+        if (data) setProposals(data as unknown as Proposal[]);
     };
 
     const fetchFundBalance = async () => {
@@ -73,7 +83,7 @@ export function useAdminActions() {
     const checkAdminStatus = async () => {
         if (CONFIG.BYPASS_AUTH) {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
+            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses(), fetchProposals()]);
             return;
         }
 
@@ -88,7 +98,7 @@ export function useAdminActions() {
 
         if (data?.role === 'admin') {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
+            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses(), fetchProposals()]);
         } else {
             setLoading(false);
         }
@@ -118,7 +128,7 @@ export function useAdminActions() {
             .insert([{ amount, type: 'deposit', description: 'Admin Manual Deposit' }]);
 
         if (!error) {
-            setFundBalance(prev => prev + amount);
+            setFundBalance((prev: number) => prev + amount);
             return true;
         }
         return false;
@@ -131,7 +141,7 @@ export function useAdminActions() {
             .eq('id', userId);
 
         if (!error) {
-            setUsers(users.map(u => u.id === userId ? { ...u, is_approved: true } : u));
+            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, is_approved: true } : u));
             return true;
         }
         return false;
@@ -144,7 +154,7 @@ export function useAdminActions() {
             .eq('id', userId);
 
         if (!error) {
-            setUsers(users.map(u => u.id === userId ? { ...u, is_approved: false } : u));
+            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, is_approved: false } : u));
             return true;
         }
         return false;
@@ -157,7 +167,7 @@ export function useAdminActions() {
             .eq('id', userId);
 
         if (!error) {
-            setUsers(users.map(u => u.id === userId ? { ...u, role: 'admin' } : u));
+            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: 'admin' } : u));
             return true;
         }
         return false;
@@ -168,6 +178,15 @@ export function useAdminActions() {
             .from('proposals')
             .delete()
             .eq('id', proposalId);
+        return !error;
+    };
+
+    const issueHypercertForProposal = async (proposalId: string, hypercertUri: string) => {
+        const { error } = await supabase
+            .from('proposals')
+            .update({ hypercert_uri: hypercertUri })
+            .eq('id', proposalId);
+        
         return !error;
     };
 
@@ -194,7 +213,7 @@ export function useAdminActions() {
             .eq('id', expenseId);
 
         if (!error) {
-            setRecurringExpenses(recurringExpenses.map(e => e.id === expenseId ? { ...e, is_active: isActive } : e));
+            setRecurringExpenses(recurringExpenses.map((e: RecurringExpense) => e.id === expenseId ? { ...e, is_active: isActive } : e));
             return true;
         }
         return false;
@@ -211,7 +230,7 @@ export function useAdminActions() {
             .single();
 
         if (data && !error) {
-            setRecurringExpenses(recurringExpenses.map(e => e.id === expenseId ? data : e));
+            setRecurringExpenses(recurringExpenses.map((e: RecurringExpense) => e.id === expenseId ? data : e));
             return true;
         }
         return false;
@@ -237,6 +256,7 @@ export function useAdminActions() {
         users,
         categories,
         recurringExpenses,
+        proposals,
         fundBalance,
         loading,
         isAdmin,
@@ -250,5 +270,6 @@ export function useAdminActions() {
         toggleRecurringExpense,
         updateRecurringExpense,
         processRecurringExpense,
+        issueHypercertForProposal,
     };
 }

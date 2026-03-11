@@ -1,6 +1,8 @@
-import { Users, UserPlus, BadgeDollarSign, RotateCcw } from 'lucide-react';
+import { Users, UserPlus, BadgeDollarSign, RotateCcw, Link2, Check } from 'lucide-react';
+import { useState } from 'react';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useHypercerts } from '../hooks/useHypercerts';
 
 export default function Dashboard() {
     const {
@@ -14,7 +16,29 @@ export default function Dashboard() {
         delegateVote,
         delegateVoteForCategory,
         getVotingPower,
+        refreshData,
     } = useDashboardData();
+    const { linkAtProtoIdentity, resolveHandle, error: hypercertError } = useHypercerts();
+    const [handle, setHandle] = useState('');
+    const [linking, setLinking] = useState(false);
+
+    const handleLinkIdentity = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentUser || !handle.trim()) return;
+        setLinking(true);
+
+        // Real ATProto Handle Resolution
+        const did = await resolveHandle(handle.trim());
+
+        if (did) {
+            const success = await linkAtProtoIdentity(currentUser.id, did);
+            if (success) {
+                await refreshData();
+                setHandle('');
+            }
+        }
+        setLinking(false);
+    };
 
     const handleDelegate = async (targetUserId: string | null) => {
         await delegateVote(targetUserId);
@@ -35,11 +59,12 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-4 w-full md:w-auto">
-                    <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48">
-                        <div className="flex items-center text-slate-500 text-sm font-medium mb-1">
+                    <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48 relative overflow-hidden">
+                        <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-green-100 rounded-full mix-blend-multiply opacity-50"></div>
+                        <div className="flex items-center text-slate-500 text-sm font-medium mb-1 relative z-10">
                             <BadgeDollarSign className="w-4 h-4 mr-2 text-green-600" /> Virtual Pot
                         </div>
-                        <div className="text-2xl font-bold text-slate-900">${fundBalance.toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-slate-900 relative z-10">${fundBalance.toFixed(2)}</div>
                     </div>
 
                     <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex-1 md:w-48 relative overflow-hidden">
@@ -126,6 +151,53 @@ export default function Dashboard() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mt-8">
+                        <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                            <Link2 className="w-5 h-5 mr-2 text-primary-500" />
+                            Linked Identities
+                        </h2>
+                        <p className="text-slate-500 text-sm mb-6">
+                            Connect your ATProto (Bluesky) identity to receive Hypercerts for your impact.
+                        </p>
+
+                        {currentUser?.atproto_did ? (
+                            <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center justify-between">
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-bold text-green-600 uppercase mb-0.5">Connected DID</div>
+                                    <div className="text-slate-900 font-mono text-[10px] truncate max-w-full">
+                                        {currentUser.atproto_did}
+                                    </div>
+                                </div>
+                                <div className="w-8 h-8 bg-green-500 rounded-full flex-shrink-0 flex items-center justify-center ml-2">
+                                    <Check className="w-4 h-4 text-white" />
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleLinkIdentity} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">Bluesky Handle</label>
+                                    <input
+                                        type="text"
+                                        value={handle}
+                                        onChange={(e) => setHandle(e.target.value)}
+                                        placeholder="alice.bsky.social"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={linking || !handle.trim()}
+                                    className="w-full py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                >
+                                    {linking ? 'Resolving...' : 'Link ATProto Identity'}
+                                </button>
+                                {hypercertError && (
+                                    <p className="mt-2 text-xs text-red-500 font-medium">{hypercertError}</p>
+                                )}
+                            </form>
+                        )}
                     </div>
                 </div>
             </div>

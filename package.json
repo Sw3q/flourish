@@ -12,6 +12,9 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@atproto/api": "^0.19.3",
+    "@atproto/lex": "^0.0.20",
+    "@atproto/lex-password-session": "^0.0.8",
     "@supabase/supabase-js": "^2.49.1",
     "@tailwindcss/vite": "^4.0.9",
     "clsx": "^2.1.1",

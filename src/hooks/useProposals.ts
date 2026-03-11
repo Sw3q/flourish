@@ -20,6 +20,7 @@ export type Proposal = {
     creator_id: string;
     categories: { name: string; color_theme: string };
     profiles: { email: string };
+    hypercert_uri?: string;
 };
 
 export function useProposals(currentUserId: string) {

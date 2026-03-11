@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Check, X, ShieldAlert, UserCheck, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, X, ShieldAlert, UserCheck, Shield, Award, Loader2 } from 'lucide-react';
 import { useAdminActions, type RecurringExpense } from '../hooks/useAdminActions';
+import { useHypercerts } from '../hooks/useHypercerts';
+import { type Proposal } from '../hooks/useProposals';
 
 const getThemeClass = (theme: string) => {
     const classes: Record<string, string> = {
@@ -29,8 +31,11 @@ export default function AdminDashboard() {
         createRecurringExpense,
         toggleRecurringExpense,
         updateRecurringExpense,
-        processRecurringExpense
+        processRecurringExpense,
+        issueHypercertForProposal,
+        proposals,
     } = useAdminActions();
+    const { createHypercert } = useHypercerts();
 
     // Form states
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -45,6 +50,13 @@ export default function AdminDashboard() {
     const [editExpenseTitle, setEditExpenseTitle] = useState('');
     const [editExpenseAmount, setEditExpenseAmount] = useState('');
     const [editExpenseCategory, setEditExpenseCategory] = useState('');
+
+    // Hypercert issuance state
+    const [issuingProposal, setIssuingProposal] = useState<Proposal | null>(null);
+    const [atprotoHandle, setAtprotoHandle] = useState('');
+    const [atprotoPassword, setAtprotoPassword] = useState('');
+    const [issuingLoading, setIssuingLoading] = useState(false);
+    const [issuanceError, setIssuanceError] = useState<string | null>(null);
 
     const handleCreateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,6 +111,35 @@ export default function AdminDashboard() {
         }
     };
 
+    const handleIssueHypercert = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!issuingProposal) return;
+
+        setIssuingLoading(true);
+        setIssuanceError(null);
+
+        const result = await createHypercert(atprotoHandle, atprotoPassword, {
+            title: issuingProposal.title,
+            description: issuingProposal.description,
+            shortDescription: `Flourish Fund impact: ${issuingProposal.amount} for ${issuingProposal.categories?.name}`,
+            createdAt: new Date().toISOString(),
+        });
+
+        if (result && result.uri) {
+            const success = await issueHypercertForProposal(issuingProposal.id, result.uri);
+            if (success) {
+                setIssuingProposal(null);
+                setAtprotoHandle('');
+                setAtprotoPassword('');
+            } else {
+                setIssuanceError('Hypercert created but failed to link to proposal.');
+            }
+        } else {
+            setIssuanceError('Failed to create Hypercert on ATProto.');
+        }
+        setIssuingLoading(false);
+    };
+
     if (loading) return <div className="p-8">Loading administration panel...</div>;
 
     if (!isAdmin) {
@@ -111,8 +152,8 @@ export default function AdminDashboard() {
         );
     }
 
-    const pendingUsers = users.filter(u => !u.is_approved && u.role !== 'admin');
-    const approvedUsers = users.filter(u => u.is_approved || u.role === 'admin');
+    const pendingUsers = users.filter((u: any) => !u.is_approved && u.role !== 'admin');
+    const approvedUsers = users.filter((u: any) => u.is_approved || u.role === 'admin');
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -165,7 +206,7 @@ export default function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
-                            {approvedUsers.map((user) => (
+                            {approvedUsers.map((user: any) => (
                                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900">{user.email}</div>
@@ -242,7 +283,7 @@ export default function AdminDashboard() {
                             <div className="p-6 text-center text-sm text-slate-500">No categories defined yet.</div>
                         ) : (
                             <ul className="divide-y divide-slate-100">
-                                {categories.map(cat => (
+                                {categories.map((cat: any) => (
                                     <li key={cat.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
                                         <span className="font-medium text-slate-800">{cat.name}</span>
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getThemeClass(cat.color_theme)}`}>
@@ -294,7 +335,7 @@ export default function AdminDashboard() {
                         <div className="p-6 text-center text-sm text-slate-500">No recurring expenses defined yet.</div>
                     ) : (
                         <ul className="divide-y divide-slate-100">
-                            {recurringExpenses.map(exp => (
+                            {recurringExpenses.map((exp: any) => (
                                 <li key={exp.id} className="border-b last:border-b-0 border-slate-100 flex p-0">
                                     {editingExpenseId === exp.id ? (
                                         <form onSubmit={(e) => handleUpdateExpense(e, exp.id)} className="p-4 flex flex-col xl:flex-row gap-4 w-full items-start xl:items-center bg-slate-50">
@@ -321,11 +362,11 @@ export default function AdminDashboard() {
                                             </div>
                                             <select
                                                 value={editExpenseCategory}
-                                                onChange={(e) => setEditExpenseCategory(e.target.value)}
+                                                onChange={(e: any) => setEditExpenseCategory(e.target.value)}
                                                 className="w-full xl:w-48 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 outline-none"
                                                 required
                                             >
-                                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                                {categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                                             </select>
                                             <div className="flex gap-2 w-full xl:w-auto mt-2 xl:mt-0">
                                                 <button type="button" onClick={() => setEditingExpenseId(null)} className="flex-1 xl:flex-none px-3 py-1.5 text-sm font-medium border border-slate-200 rounded-lg hover:bg-white text-slate-600 transition-colors">Cancel</button>
@@ -373,7 +414,6 @@ export default function AdminDashboard() {
                         </ul>
                     )}
                 </div>
-
                 <form onSubmit={handleCreateExpense} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                     <label className="block text-xs font-medium text-slate-500 uppercase">Create Recurring Expense</label>
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -400,11 +440,11 @@ export default function AdminDashboard() {
                     <div className="flex gap-4">
                         <select
                             value={newExpenseCategory}
-                            onChange={(e) => setNewExpenseCategory(e.target.value)}
+                            onChange={(e: any) => setNewExpenseCategory(e.target.value)}
                             className="flex-1 px-4 py-2 border border-slate-200 rounded-xl outline-none bg-white"
                         >
                             <option value="" disabled>Select Category</option>
-                            {categories.map(cat => (
+                            {categories.map((cat: any) => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
                         </select>
@@ -414,6 +454,122 @@ export default function AdminDashboard() {
                     </div>
                 </form>
             </section>
+            <section className="mt-8">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary-500" />
+                    Issue Impact Hypercerts
+                </h2>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-100">
+                        <thead className="bg-slate-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proposal</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-100">
+                            {proposals.filter((p: any) => p.status === 'passed' && !p.hypercert_uri).length === 0 ? (
+                                <tr>
+                                    <td colSpan={3} className="px-6 py-8 text-center text-sm text-slate-400">All passed proposals have Hypercerts or none pending.</td>
+                                </tr>
+                            ) : (
+                                proposals.filter((p: any) => p.status === 'passed' && !p.hypercert_uri).map((proposal: any) => (
+                                    <tr key={proposal.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-slate-900">{proposal.title}</div>
+                                            <div className="text-xs text-slate-500">{proposal.categories?.name}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700">
+                                            ${proposal.amount}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <button
+                                                onClick={() => setIssuingProposal(proposal)}
+                                                className="px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-bold rounded-lg transition-colors border border-primary-100"
+                                            >
+                                                Issue Hypercert
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            {/* Issuance Modal */}
+            {issuingProposal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <Award className="w-5 h-5 text-primary-500" />
+                                Issue Hypercert
+                            </h3>
+                            <button onClick={() => setIssuingProposal(null)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleIssueHypercert} className="p-6 space-y-4">
+                            <div className="bg-primary-50 p-4 rounded-2xl border border-primary-100 mb-2">
+                                <div className="text-xs font-bold text-primary-600 uppercase mb-1">Proposal</div>
+                                <div className="text-slate-900 font-medium">{issuingProposal.title}</div>
+                                <div className="text-sm text-slate-500">${issuingProposal.amount} · {issuingProposal.categories?.name}</div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">ATProto Handle</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={atprotoHandle}
+                                    onChange={(e) => setAtprotoHandle(e.target.value)}
+                                    placeholder="yourname.bsky.social"
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">App Password</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={atprotoPassword}
+                                    onChange={(e) => setAtprotoPassword(e.target.value)}
+                                    placeholder="abcd-efgh-ijkl-mnop"
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1 ml-1 px-1 leading-relaxed">
+                                    Use a dedicated app password from your Bluesky settings. Never use your main account password.
+                                </p>
+                            </div>
+
+                            {issuanceError && (
+                                <div className="p-3 bg-red-50 text-red-600 text-xs font-medium rounded-xl border border-red-100">
+                                    {issuanceError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={issuingLoading}
+                                className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
+                            >
+                                {issuingLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Signing Claims...
+                                    </>
+                                ) : (
+                                    'Issue Verifiable Hypercert'
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

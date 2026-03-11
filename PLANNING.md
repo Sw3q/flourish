@@ -3,9 +3,7 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- None currently active.
-- None currently active.
-- None currently active.
+- **Phase 20: Hypercerts Integration**: Enable impact tracking via ATProto hypercerts for passed proposals and support identity linking (Profile ↔ DID).
 
 ## Completed Plans History
 - **Phase 11 & 14 (Recurring Expenses & Admin Enhancements)**: Implemented `recurring_expenses` schema, admin controls, inline editing, and user transparency metrics.

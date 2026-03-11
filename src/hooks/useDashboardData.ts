@@ -7,6 +7,7 @@ export type Profile = {
     email: string;
     delegated_to: string | null;
     role: string;
+    atproto_did?: string;
 };
 
 export type CategoryDelegation = {
@@ -222,5 +223,6 @@ export function useDashboardData() {
         delegateVote,
         delegateVoteForCategory,
         getVotingPower,
+        refreshData: fetchDashboardData,
     };
 }
