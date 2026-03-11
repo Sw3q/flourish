@@ -16,7 +16,7 @@ export default function App() {
         <Route element={<AuthLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          {/* We will add /proposals/new and others here later */}
+          {/* We will add /routes and others here later */}
         </Route>
       </Routes>
     </Router >
