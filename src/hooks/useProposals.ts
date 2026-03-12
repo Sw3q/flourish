@@ -28,6 +28,7 @@ export function useProposals(currentUserId: string) {
     const [categories, setCategories] = useState<Category[]>([]);
     const [userVotes, setUserVotes] = useState<Record<string, boolean>>({});
     const [proposalVotes, setProposalVotes] = useState<Record<string, { yes: number, total: number }>>({});
+    const [participationMap, setParticipationMap] = useState<Record<string, boolean>>({});
     const [totalApprovedUsers, setTotalApprovedUsers] = useState(0);
 
     const fetchData = async () => {
@@ -40,15 +41,34 @@ export function useProposals(currentUserId: string) {
             .order('created_at', { ascending: false });
         if (props) setProposals(props as unknown as Proposal[]);
 
-        const { data: votes } = await supabase
-            .from('votes')
-            .select('proposal_id, vote')
-            .eq('voter_id', currentUserId);
+        // Participation tracking: Direct votes + Delegated participation
+        const { data: allVotes } = await supabase.from('votes').select('*');
+        const { data: profile } = await supabase.from('profiles').select('delegated_to').eq('id', currentUserId).single();
+        const { data: catDelegations } = await supabase.from('category_delegations').select('*').eq('user_id', currentUserId);
 
-        if (votes) {
-            const voteMap: Record<string, boolean> = {};
-            votes.forEach(v => { voteMap[v.proposal_id] = v.vote; });
-            setUserVotes(voteMap);
+        if (allVotes && props) {
+            const pMap: Record<string, boolean> = {};
+            const userVoteMap: Record<string, boolean> = {};
+
+            props.forEach((proposal: any) => {
+                const directVote = allVotes.find(v => v.proposal_id === proposal.id && v.voter_id === currentUserId);
+                if (directVote) {
+                    pMap[proposal.id] = true;
+                    userVoteMap[proposal.id] = directVote.vote;
+                } else {
+                    // Check delegation
+                    const catDelegate = catDelegations?.find(cd => cd.category_id === proposal.category_id)?.delegated_to;
+                    const effectiveDelegate = catDelegate || profile?.delegated_to;
+                    
+                    if (effectiveDelegate) {
+                        const delegateVoted = allVotes.some(v => v.proposal_id === proposal.id && v.voter_id === effectiveDelegate);
+                        if (delegateVoted) pMap[proposal.id] = true;
+                    }
+                }
+            });
+
+            setParticipationMap(pMap);
+            setUserVotes(userVoteMap);
         }
 
         await fetchVoteTotals(props as unknown as Proposal[]);
@@ -183,9 +203,34 @@ export function useProposals(currentUserId: string) {
         return !error;
     };
 
+    const updateProposalHypercert = async (proposalId: string, hypercertUri: string) => {
+        const { error } = await supabase
+            .from('proposals')
+            .update({ hypercert_uri: hypercertUri })
+            .eq('id', proposalId);
+
+        if (!error) {
+            await fetchData();
+            return true;
+        }
+        return false;
+    };
+
     useEffect(() => {
         if (currentUserId) fetchData();
     }, [currentUserId]);
 
-    return { proposals, categories, userVotes, proposalVotes, totalApprovedUsers, createProposal, castVote, deleteProposal, refreshData: fetchData };
+    return { 
+        proposals, 
+        categories, 
+        userVotes, 
+        proposalVotes, 
+        participationMap,
+        totalApprovedUsers, 
+        createProposal, 
+        castVote, 
+        deleteProposal, 
+        updateProposalHypercert,
+        refreshData: fetchData 
+    };
 }

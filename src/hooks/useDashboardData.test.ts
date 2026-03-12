@@ -171,4 +171,66 @@ describe('useDashboardData Hook', () => {
 
         expect(power).toBe(3);
     });
+
+    it('should update ATProto credentials correctly', async () => {
+        const userId = 'me';
+        (supabase.auth.getUser as any).mockResolvedValue({ data: { user: { id: userId } } });
+
+        const mockProfile = { id: userId, email: 'me@test.com', role: 'member' };
+        
+        const updateMock = vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null })
+        });
+
+        // Use a more robust mock factory for chaining
+        const createChainMock = (data: any = null, error: any = null) => {
+            const mock: any = {
+                select: vi.fn().mockReturnThis(),
+                eq: vi.fn().mockReturnThis(),
+                neq: vi.fn().mockReturnThis(),
+                single: vi.fn().mockImplementation(() => Promise.resolve({ data, error })),
+                then: vi.fn().mockImplementation((cb: any) => Promise.resolve(cb({ data, error }))),
+                update: updateMock,
+                count: vi.fn().mockReturnThis(),
+            };
+            return mock;
+        };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'profiles') {
+                const mock = createChainMock(mockProfile);
+                // Custom overrides for specific chains in fetchDashboardData
+                mock.select = vi.fn().mockReturnValue({
+                    eq: vi.fn().mockImplementation((col: string, _val: any) => {
+                        if (col === 'id') return { single: () => Promise.resolve({ data: mockProfile }) };
+                        if (col === 'delegated_to') return { head: true, count: 'exact', then: (cb: any) => Promise.resolve(cb({ count: 0 })) };
+                        return createChainMock([]);
+                    }),
+                    neq: vi.fn().mockReturnThis(),
+                });
+                return mock;
+            }
+            if (table === 'category_delegations') return createChainMock([]);
+            if (table === 'transactions') return createChainMock([]);
+            if (table === 'recurring_expenses') return createChainMock([]);
+            return createChainMock([]);
+        });
+
+        const { result } = renderHook(() => useDashboardData());
+        
+        // Wait for loading to be false
+        await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 });
+
+        let success;
+        await act(async () => {
+            success = await result.current.updateAtProtoCredentials('alice.bsky.social', 'abcd-1234');
+        });
+
+        expect(success).toBe(true);
+        expect(updateMock).toHaveBeenCalledWith({
+            atproto_handle: 'alice.bsky.social',
+            atproto_app_password: 'abcd-1234'
+        });
+        expect(result.current.currentUser?.atproto_handle).toBe('alice.bsky.social');
+    });
 });

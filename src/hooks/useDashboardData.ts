@@ -8,6 +8,8 @@ export type Profile = {
     delegated_to: string | null;
     role: string;
     atproto_did?: string;
+    atproto_handle?: string;
+    atproto_app_password?: string;
 };
 
 export type CategoryDelegation = {
@@ -33,7 +35,7 @@ export function useDashboardData() {
     const fetchDashboardData = async () => {
         let user;
         if (CONFIG.BYPASS_AUTH) {
-            user = { id: '00000000-0000-0000-0000-000000000000', email: 'demo@flourish.test' };
+            user = { id: '00000000-0000-0000-0000-000000000001', email: 'demo@flourish.test' };
         } else {
             const { data } = await supabase.auth.getUser();
             user = data.user;
@@ -110,6 +112,28 @@ export function useDashboardData() {
         }
 
         setLoading(false);
+    };
+
+    const updateAtProtoCredentials = async (handle: string, appPassword: string) => {
+        if (!currentUser) return false;
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ 
+                atproto_handle: handle,
+                atproto_app_password: appPassword 
+            })
+            .eq('id', currentUser.id);
+
+        if (!error) {
+            setCurrentUser({ 
+                ...currentUser, 
+                atproto_handle: handle, 
+                atproto_app_password: appPassword 
+            });
+            return true;
+        }
+        return false;
     };
 
     // Global delegation — applies to all categories unless overridden
@@ -220,6 +244,7 @@ export function useDashboardData() {
         monthlyBurnRate,
         loading,
         categoryDelegations,
+        updateAtProtoCredentials,
         delegateVote,
         delegateVoteForCategory,
         getVotingPower,

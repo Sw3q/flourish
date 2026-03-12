@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { CONFIG } from '../config';
-import { type Proposal } from './useProposals';
 
 export type Profile = {
     id: string;
@@ -30,7 +29,6 @@ export function useAdminActions() {
     const [users, setUsers] = useState<Profile[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
-    const [proposals, setProposals] = useState<Proposal[]>([]);
     const [fundBalance, setFundBalance] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -50,14 +48,6 @@ export function useAdminActions() {
             .select('*, categories(name, color_theme)')
             .order('created_at', { ascending: false });
         if (data) setRecurringExpenses(data as RecurringExpense[]);
-    };
-
-    const fetchProposals = async () => {
-        const { data } = await supabase
-            .from('proposals')
-            .select('*, categories (name, color_theme), profiles:creator_id (email)')
-            .order('created_at', { ascending: false });
-        if (data) setProposals(data as unknown as Proposal[]);
     };
 
     const fetchFundBalance = async () => {
@@ -83,7 +73,7 @@ export function useAdminActions() {
     const checkAdminStatus = async () => {
         if (CONFIG.BYPASS_AUTH) {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses(), fetchProposals()]);
+            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
             return;
         }
 
@@ -98,7 +88,7 @@ export function useAdminActions() {
 
         if (data?.role === 'admin') {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses(), fetchProposals()]);
+            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
         } else {
             setLoading(false);
         }
@@ -181,15 +171,6 @@ export function useAdminActions() {
         return !error;
     };
 
-    const issueHypercertForProposal = async (proposalId: string, hypercertUri: string) => {
-        const { error } = await supabase
-            .from('proposals')
-            .update({ hypercert_uri: hypercertUri })
-            .eq('id', proposalId);
-        
-        return !error;
-    };
-
     const createRecurringExpense = async (title: string, amount: number, categoryId: string) => {
         if (!title.trim() || isNaN(amount) || amount <= 0 || !categoryId) return false;
 
@@ -256,7 +237,6 @@ export function useAdminActions() {
         users,
         categories,
         recurringExpenses,
-        proposals,
         fundBalance,
         loading,
         isAdmin,
@@ -270,6 +250,5 @@ export function useAdminActions() {
         toggleRecurringExpense,
         updateRecurringExpense,
         processRecurringExpense,
-        issueHypercertForProposal,
     };
 }

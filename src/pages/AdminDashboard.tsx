@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Check, X, ShieldAlert, UserCheck, Shield, Award, Loader2 } from 'lucide-react';
+import { Check, X, ShieldAlert, UserCheck, Shield } from 'lucide-react';
 import { useAdminActions, type RecurringExpense } from '../hooks/useAdminActions';
-import { useHypercerts } from '../hooks/useHypercerts';
-import { type Proposal } from '../hooks/useProposals';
 
 const getThemeClass = (theme: string) => {
     const classes: Record<string, string> = {
@@ -32,10 +30,7 @@ export default function AdminDashboard() {
         toggleRecurringExpense,
         updateRecurringExpense,
         processRecurringExpense,
-        issueHypercertForProposal,
-        proposals,
     } = useAdminActions();
-    const { createHypercert } = useHypercerts();
 
     // Form states
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -50,13 +45,6 @@ export default function AdminDashboard() {
     const [editExpenseTitle, setEditExpenseTitle] = useState('');
     const [editExpenseAmount, setEditExpenseAmount] = useState('');
     const [editExpenseCategory, setEditExpenseCategory] = useState('');
-
-    // Hypercert issuance state
-    const [issuingProposal, setIssuingProposal] = useState<Proposal | null>(null);
-    const [atprotoHandle, setAtprotoHandle] = useState('');
-    const [atprotoPassword, setAtprotoPassword] = useState('');
-    const [issuingLoading, setIssuingLoading] = useState(false);
-    const [issuanceError, setIssuanceError] = useState<string | null>(null);
 
     const handleCreateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -109,35 +97,6 @@ export default function AdminDashboard() {
         if (success) {
             setEditingExpenseId(null);
         }
-    };
-
-    const handleIssueHypercert = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!issuingProposal) return;
-
-        setIssuingLoading(true);
-        setIssuanceError(null);
-
-        const result = await createHypercert(atprotoHandle, atprotoPassword, {
-            title: issuingProposal.title,
-            description: issuingProposal.description,
-            shortDescription: `Flourish Fund impact: ${issuingProposal.amount} for ${issuingProposal.categories?.name}`,
-            createdAt: new Date().toISOString(),
-        });
-
-        if (result && result.uri) {
-            const success = await issueHypercertForProposal(issuingProposal.id, result.uri);
-            if (success) {
-                setIssuingProposal(null);
-                setAtprotoHandle('');
-                setAtprotoPassword('');
-            } else {
-                setIssuanceError('Hypercert created but failed to link to proposal.');
-            }
-        } else {
-            setIssuanceError('Failed to create Hypercert on ATProto.');
-        }
-        setIssuingLoading(false);
     };
 
     if (loading) return <div className="p-8">Loading administration panel...</div>;
@@ -248,7 +207,7 @@ export default function AdminDashboard() {
 
             <div className="grid md:grid-cols-2 gap-8">
                 <section>
-                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Communal Pot</h2>
+                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Pot Balance</h2>
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-4">
                         <div className="text-sm text-slate-500 mb-1">Current Virtual Balance</div>
                         <div className="text-4xl font-bold text-success-400">${fundBalance.toFixed(2)}</div>
@@ -454,122 +413,6 @@ export default function AdminDashboard() {
                     </div>
                 </form>
             </section>
-            <section className="mt-8">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-primary-500" />
-                    Issue Impact Hypercerts
-                </h2>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <table className="min-w-full divide-y divide-slate-100">
-                        <thead className="bg-slate-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proposal</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-slate-100">
-                            {proposals.filter((p: any) => p.status === 'passed' && !p.hypercert_uri).length === 0 ? (
-                                <tr>
-                                    <td colSpan={3} className="px-6 py-8 text-center text-sm text-slate-400">All passed proposals have Hypercerts or none pending.</td>
-                                </tr>
-                            ) : (
-                                proposals.filter((p: any) => p.status === 'passed' && !p.hypercert_uri).map((proposal: any) => (
-                                    <tr key={proposal.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-slate-900">{proposal.title}</div>
-                                            <div className="text-xs text-slate-500">{proposal.categories?.name}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700">
-                                            ${proposal.amount}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <button
-                                                onClick={() => setIssuingProposal(proposal)}
-                                                className="px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-bold rounded-lg transition-colors border border-primary-100"
-                                            >
-                                                Issue Hypercert
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            {/* Issuance Modal */}
-            {issuingProposal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-primary-500" />
-                                Issue Hypercert
-                            </h3>
-                            <button onClick={() => setIssuingProposal(null)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-                                <X className="w-5 h-5 text-slate-400" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleIssueHypercert} className="p-6 space-y-4">
-                            <div className="bg-primary-50 p-4 rounded-2xl border border-primary-100 mb-2">
-                                <div className="text-xs font-bold text-primary-600 uppercase mb-1">Proposal</div>
-                                <div className="text-slate-900 font-medium">{issuingProposal.title}</div>
-                                <div className="text-sm text-slate-500">${issuingProposal.amount} · {issuingProposal.categories?.name}</div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">ATProto Handle</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={atprotoHandle}
-                                    onChange={(e) => setAtprotoHandle(e.target.value)}
-                                    placeholder="yourname.bsky.social"
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">App Password</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={atprotoPassword}
-                                    onChange={(e) => setAtprotoPassword(e.target.value)}
-                                    placeholder="abcd-efgh-ijkl-mnop"
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-                                />
-                                <p className="text-[10px] text-slate-400 mt-1 ml-1 px-1 leading-relaxed">
-                                    Use a dedicated app password from your Bluesky settings. Never use your main account password.
-                                </p>
-                            </div>
-
-                            {issuanceError && (
-                                <div className="p-3 bg-red-50 text-red-600 text-xs font-medium rounded-xl border border-red-100">
-                                    {issuanceError}
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={issuingLoading}
-                                className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
-                            >
-                                {issuingLoading ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Signing Claims...
-                                    </>
-                                ) : (
-                                    'Issue Verifiable Hypercert'
-                                )}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Trash2, Users, ExternalLink } from 'lucide-react';
-import { useProposals } from '../hooks/useProposals';
+import { Plus, Check, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Trash2, Users, ExternalLink, Award } from 'lucide-react';
+import { useProposals, type Proposal } from '../hooks/useProposals';
+import HypercertIssuanceModal from './HypercertIssuanceModal';
 import type { Profile } from '../hooks/useDashboardData';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,10 +240,12 @@ export default function ProposalsList({
         categories,
         userVotes,
         proposalVotes,
+        participationMap,
         totalApprovedUsers,
         createProposal,
         castVote,
         deleteProposal,
+        updateProposalHypercert,
     } = useProposals(currentUserId);
 
     // New Proposal Form State
@@ -255,6 +258,14 @@ export default function ProposalsList({
     const [submitting, setSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // Hypercert issuance state
+    const [issuingProposal, setIssuingProposal] = useState<Proposal | null>(null);
+
+    const handleIssueHypercertSuccess = async (uri: string) => {
+        if (!issuingProposal) return false;
+        return await updateProposalHypercert(issuingProposal.id, uri);
+    };
 
     const handleCreateProposal = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -463,7 +474,7 @@ export default function ProposalsList({
                                             <span className="text-xs text-slate-500">
                                                 {proposal.status === 'passed' ? '✓ Passed' : '✗ Rejected'} · {new Date(proposal.expires_at).toLocaleDateString()}
                                             </span>
-                                            {proposal.hypercert_uri && (
+                                            {proposal.hypercert_uri ? (
                                                 <a
                                                     href={`https://psky.app/profile/${proposal.hypercert_uri.split('/')[2]}/post/${proposal.hypercert_uri.split('/')[4]}`}
                                                     target="_blank"
@@ -473,6 +484,14 @@ export default function ProposalsList({
                                                     <ExternalLink className="w-2.5 h-2.5" />
                                                     Hypercert
                                                 </a>
+                                            ) : (proposal.status === 'passed' && participationMap[proposal.id]) && (
+                                                <button
+                                                    onClick={() => setIssuingProposal(proposal)}
+                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-50 text-accent-600 text-[10px] font-bold uppercase tracking-tight rounded-md border border-accent-100 hover:bg-accent-100 transition-colors"
+                                                >
+                                                    <Award className="w-2.5 h-2.5" />
+                                                    Issue Hypercert
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -482,6 +501,14 @@ export default function ProposalsList({
                         ))}
                     </div>
                 </div>
+            )}
+            {/* Issuance Modal */}
+            {issuingProposal && (
+                <HypercertIssuanceModal
+                    proposal={issuingProposal}
+                    onClose={() => setIssuingProposal(null)}
+                    onSuccess={handleIssueHypercertSuccess}
+                />
             )}
         </div>
     );

@@ -13,29 +13,39 @@ export default function Dashboard() {
         monthlyBurnRate,
         loading,
         categoryDelegations,
+        updateAtProtoCredentials,
         delegateVote,
         delegateVoteForCategory,
         getVotingPower,
         refreshData,
     } = useDashboardData();
     const { linkAtProtoIdentity, resolveHandle, error: hypercertError } = useHypercerts();
-    const [handle, setHandle] = useState('');
+    const [handle, setHandle] = useState(currentUser?.atproto_handle || '');
+    const [appPassword, setAppPassword] = useState(currentUser?.atproto_app_password || '');
     const [linking, setLinking] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const handleLinkIdentity = async (e: React.FormEvent) => {
+    const handleSaveCredentials = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentUser || !handle.trim()) return;
+        if (!currentUser || !handle.trim() || !appPassword.trim()) return;
         setLinking(true);
+        setSuccessMessage(null);
 
-        // Real ATProto Handle Resolution
-        const did = await resolveHandle(handle.trim());
-
-        if (did) {
-            const success = await linkAtProtoIdentity(currentUser.id, did);
-            if (success) {
-                await refreshData();
-                setHandle('');
+        // First, resolve handle to DID if not already present
+        let did: string | undefined = currentUser.atproto_did;
+        if (!did) {
+            const resolved = await resolveHandle(handle.trim());
+            did = resolved ?? undefined;
+            if (did) {
+                await linkAtProtoIdentity(currentUser.id, did);
             }
+        }
+
+        const success = await updateAtProtoCredentials(handle.trim(), appPassword.trim());
+        if (success) {
+            setSuccessMessage('Credentials saved successfully!');
+            setTimeout(() => setSuccessMessage(null), 3000);
+            await refreshData();
         }
         setLinking(false);
     };
@@ -162,39 +172,66 @@ export default function Dashboard() {
                             Connect your ATProto (Bluesky) identity to receive Hypercerts for your impact.
                         </p>
 
-                        {currentUser?.atproto_did ? (
-                            <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center justify-between">
-                                <div className="min-w-0">
-                                    <div className="text-[10px] font-bold text-green-600 uppercase mb-0.5">Connected DID</div>
-                                    <div className="text-slate-900 font-mono text-[10px] truncate max-w-full">
-                                        {currentUser.atproto_did}
+                        {currentUser?.atproto_handle && currentUser?.atproto_app_password ? (
+                            <div className="space-y-4">
+                                <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center justify-between">
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-bold text-green-600 uppercase mb-0.5">Connected Handle</div>
+                                        <div className="text-slate-900 font-medium text-sm truncate">
+                                            {currentUser.atproto_handle}
+                                        </div>
+                                    </div>
+                                    <div className="w-8 h-8 bg-green-500 rounded-full flex-shrink-0 flex items-center justify-center ml-2">
+                                        <Check className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
-                                <div className="w-8 h-8 bg-green-500 rounded-full flex-shrink-0 flex items-center justify-center ml-2">
-                                    <Check className="w-4 h-4 text-white" />
-                                </div>
+                                <button 
+                                    onClick={() => {
+                                        setHandle(currentUser.atproto_handle || '');
+                                        setAppPassword(currentUser.atproto_app_password || '');
+                                        updateAtProtoCredentials('', '');
+                                    }}
+                                    className="text-xs text-slate-400 hover:text-primary-600 underline font-medium"
+                                >
+                                    Update Credentials
+                                </button>
                             </div>
                         ) : (
-                            <form onSubmit={handleLinkIdentity} className="space-y-4">
+                            <form onSubmit={handleSaveCredentials} className="space-y-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">Bluesky Handle</label>
                                     <input
                                         type="text"
+                                        required
                                         value={handle}
                                         onChange={(e) => setHandle(e.target.value)}
                                         placeholder="alice.bsky.social"
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                     />
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-400 ml-1 uppercase">App Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={appPassword}
+                                        onChange={(e) => setAppPassword(e.target.value)}
+                                        placeholder="abcd-efgh-ijkl-mnop"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                    />
+                                </div>
                                 <button
                                     type="submit"
-                                    disabled={linking || !handle.trim()}
+                                    disabled={linking || !handle.trim() || !appPassword.trim()}
                                     className="w-full py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
                                 >
-                                    {linking ? 'Resolving...' : 'Link ATProto Identity'}
+                                    {linking ? 'Saving...' : 'Secure & Save Credentials'}
                                 </button>
+                                {successMessage && (
+                                    <p className="mt-2 text-xs text-green-600 font-medium text-center">{successMessage}</p>
+                                )}
                                 {hypercertError && (
-                                    <p className="mt-2 text-xs text-red-500 font-medium">{hypercertError}</p>
+                                    <p className="mt-2 text-xs text-red-500 font-medium text-center">{hypercertError}</p>
                                 )}
                             </form>
                         )}
