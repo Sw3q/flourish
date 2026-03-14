@@ -3,7 +3,7 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 20: Hypercerts Integration**: Enable impact tracking via ATProto hypercerts for passed proposals and support identity linking (Profile ↔ DID).
+- **Phase 22: Next Steps**: Potential refinements for impact tracking or governance expansions.
 
 ## Completed Plans History
 - **Phase 11 & 14 (Recurring Expenses & Admin Enhancements)**: Implemented `recurring_expenses` schema, admin controls, inline editing, and user transparency metrics.
@@ -14,3 +14,5 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 - **Phase 17 (Redirect to Pending after Auth)**: Implemented redirect to `/pending` page after email verification in `signUp` options.
 - **Phase 18 (Email Rate Limit Handling)**: Improved UX for rate limit errors and provided SMTP configuration guidance.
 - **Phase 19 (Optional Auth Bypass)**: Implemented a toggleable bypass for local development, allowing users to skip login/approval steps via `CONFIG.BYPASS_AUTH`.
+- **Phase 20 (Hypercerts Integration)**: Enabled impact tracking via ATProto hypercerts for passed proposals and support for decentralized identity linking (Profile ↔ DID).
+- **Phase 21 (Persistent Credentials & Admin Cleanup)**: Implemented secure storage for ATProto credentials in user profiles, streamlined issuance flow with auto-population, and removed redundant admin-only issuance UI.

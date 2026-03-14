@@ -123,24 +123,24 @@ function ConvictionStatus({ quorumReachedAt }: { quorumReachedAt: string | null 
 // Delegation Pills Sub-Component (shown inside each proposal card)
 // ─────────────────────────────────────────────────────────────────────────────
 function DelegationPills({
-    categoryId,
+    proposalId,
     members,
-    categoryDelegations,
-    onDelegateCategory,
+    proposalDelegations,
+    onDelegateProposal,
 }: {
-    categoryId: string;
+    proposalId: string;
     members: Profile[];
-    categoryDelegations: Record<string, string>;
-    onDelegateCategory: (categoryId: string, targetId: string | null) => Promise<boolean>;
+    proposalDelegations: Record<string, string>;
+    onDelegateProposal: (proposalId: string, targetId: string | null) => Promise<boolean>;
 }) {
-    const activeDelegateId = categoryDelegations[categoryId] ?? null;
+    const activeDelegateId = proposalDelegations[proposalId] ?? null;
 
     const handleClick = async (memberId: string) => {
         if (activeDelegateId === memberId) {
-            // Clicking the active delegate removes the category delegation
-            await onDelegateCategory(categoryId, null);
+            // Clicking the active delegate removes the delegation
+            await onDelegateProposal(proposalId, null);
         } else {
-            await onDelegateCategory(categoryId, memberId);
+            await onDelegateProposal(proposalId, memberId);
         }
     };
 
@@ -159,7 +159,7 @@ function DelegationPills({
                         <button
                             key={member.id}
                             onClick={() => handleClick(member.id)}
-                            title={isActive ? `Remove delegation from ${name}` : `Delegate this category to ${name}`}
+                            title={isActive ? `Remove delegation from ${name}` : `Delegate this vote to ${name}`}
                             className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${isActive
                                 ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
                                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-primary-300 hover:text-primary-700 hover:bg-primary-50'
@@ -181,28 +181,26 @@ function DelegationPills({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dynamic Vote Button Sub-Component (shows per-category weight)
+// Dynamic Vote Button Sub-Component (shows per-proposal voting weight)
 // ─────────────────────────────────────────────────────────────────────────────
 function VoteButton({
     proposalId,
-    categoryId,
     isYes,
     isActive,
     onVote,
     getVotingPower,
 }: {
     proposalId: string;
-    categoryId: string;
     isYes: boolean;
     isActive: boolean;
     onVote: (id: string, yes: boolean) => Promise<void>;
-    getVotingPower: (categoryId: string) => Promise<number>;
+    getVotingPower: (proposalId: string) => Promise<number>;
 }) {
     const [power, setPower] = useState<number | null>(null);
 
     useEffect(() => {
-        getVotingPower(categoryId).then(setPower);
-    }, [categoryId, getVotingPower]);
+        getVotingPower(proposalId).then(setPower);
+    }, [proposalId, getVotingPower]);
 
     return (
         <button
@@ -225,15 +223,17 @@ function VoteButton({
 export default function ProposalsList({
     currentUserId,
     members,
-    categoryDelegations,
-    onDelegateCategory,
+    proposalDelegations,
+    globalDelegatedTo,
+    onDelegateProposal,
     getVotingPower,
 }: {
     currentUserId: string;
     members: Profile[];
-    categoryDelegations: Record<string, string>;
-    onDelegateCategory: (categoryId: string, targetId: string | null) => Promise<boolean>;
-    getVotingPower: (categoryId: string) => Promise<number>;
+    proposalDelegations: Record<string, string>;
+    globalDelegatedTo: string | null;
+    onDelegateProposal: (proposalId: string, targetId: string | null) => Promise<boolean>;
+    getVotingPower: (proposalId: string) => Promise<number>;
 }) {
     const {
         proposals,
@@ -415,40 +415,45 @@ export default function ProposalsList({
                                 {/* Vote progress */}
                                 <div className="text-xs text-slate-400 font-medium">{progress}% to threshold ({votes.yes}/{Math.ceil(threshold + 1)} yes needed)</div>
 
-                                {/* Vote buttons */}
-                                <div className="flex gap-3">
-                                    <VoteButton
-                                        proposalId={proposal.id}
-                                        categoryId={proposal.category_id}
-                                        isYes={true}
-                                        isActive={userVotes[proposal.id] === true}
-                                        onVote={handleVote}
-                                        getVotingPower={getVotingPower}
-                                    />
-                                    <button
-                                        onClick={() => handleVote(proposal.id, false)}
-                                        title={userVotes[proposal.id] === false ? 'Click to retract your No vote' : 'Vote No'}
-                                        className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${userVotes[proposal.id] === false
-                                            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-offset-1 ring-red-400'
-                                            : 'bg-slate-50 text-slate-600 hover:bg-red-100 hover:text-red-700 border border-slate-100'
-                                            }`}
-                                    >
-                                        <ThumbsDown className="w-4 h-4 mr-2" />
-                                        No
-                                    </button>
-                                </div>
+                                {/* Vote buttons or Delegation message */}
+                                {!globalDelegatedTo && !proposalDelegations[proposal.id] ? (
+                                    <div className="flex gap-3">
+                                        <VoteButton
+                                            proposalId={proposal.id}
+                                            isYes={true}
+                                            isActive={userVotes[proposal.id] === true}
+                                            onVote={handleVote}
+                                            getVotingPower={getVotingPower}
+                                        />
+                                        <button
+                                            onClick={() => handleVote(proposal.id, false)}
+                                            title={userVotes[proposal.id] === false ? 'Click to retract your No vote' : 'Vote No'}
+                                            className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${userVotes[proposal.id] === false
+                                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-offset-1 ring-red-400'
+                                                : 'bg-slate-50 text-slate-600 hover:bg-red-100 hover:text-red-700 border border-slate-100'
+                                                }`}
+                                        >
+                                            <ThumbsDown className="w-4 h-4 mr-2" />
+                                            No
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-2 px-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 text-xs font-medium italic">
+                                        Voting power delegated
+                                    </div>
+                                )}
 
                                 {/* Conviction / Quorum Status */}
                                 <div className="mt-2">
                                     <ConvictionStatus quorumReachedAt={proposal.quorum_reached_at} />
                                 </div>
 
-                                {/* Per-category delegation pills */}
+                                {/* Per-proposal delegation pills */}
                                 <DelegationPills
-                                    categoryId={proposal.category_id}
+                                    proposalId={proposal.id}
                                     members={members}
-                                    categoryDelegations={categoryDelegations}
-                                    onDelegateCategory={onDelegateCategory}
+                                    proposalDelegations={proposalDelegations}
+                                    onDelegateProposal={onDelegateProposal}
                                 />
                             </div>
                         </div>

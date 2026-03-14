@@ -12,10 +12,10 @@ export default function Dashboard() {
         fundBalance,
         monthlyBurnRate,
         loading,
-        categoryDelegations,
+        proposalDelegations,
         updateAtProtoCredentials,
         delegateVote,
-        delegateVoteForCategory,
+        delegateVoteForProposal,
         getVotingPower,
         refreshData,
     } = useDashboardData();
@@ -105,8 +105,9 @@ export default function Dashboard() {
                         <ProposalsList
                             currentUserId={currentUser.id}
                             members={members}
-                            categoryDelegations={categoryDelegations}
-                            onDelegateCategory={delegateVoteForCategory}
+                            proposalDelegations={proposalDelegations}
+                            globalDelegatedTo={currentUser.delegated_to}
+                            onDelegateProposal={delegateVoteForProposal}
                             getVotingPower={getVotingPower}
                         />
                     )}

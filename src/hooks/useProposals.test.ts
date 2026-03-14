@@ -7,8 +7,15 @@ import { supabase } from '../lib/supabase';
 const safeMock = () => ({
     select: vi.fn().mockReturnValue({
         order: vi.fn().mockResolvedValue({ data: [] }),
-        eq: vi.fn().mockResolvedValue({ data: [], count: 0 }),
+        eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null }),
+            eq: vi.fn().mockResolvedValue({ data: [], count: 0 }),
+            then: (cb: any) => Promise.resolve(cb({ data: [], count: 0, error: null })),
+        }),
         single: vi.fn().mockResolvedValue({ data: null }),
+        in: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [] }),
+        }),
     }),
     insert: vi.fn().mockReturnValue({
         select: () => ({ single: vi.fn().mockResolvedValue({ data: null, error: null }) })
@@ -87,23 +94,32 @@ describe('useProposals Hook', () => {
             const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 });
             const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 });
 
-            (supabase.from as any).mockImplementation((table: string) => {
-                if (table === 'votes') return {
-                    insert: mockInsert,
-                    update: mockUpdate,
-                    delete: mockDelete,
-                    select: () => ({
-                        eq: vi.fn().mockResolvedValue({
-                            data: existingVote !== undefined
-                                ? [{ proposal_id: 'prop1', vote: existingVote }]
-                                : []
-                        })
-                    }),
-                };
-                return safeMock();
-            });
-            const { result } = renderHook(() => useProposals('user1'));
-            return { result, mockInsert, mockUpdate, mockDelete };
+        // Votes for prop1 (as the currentUser's own vote)
+        const currentUserVote = existingVote !== undefined
+            ? [{ proposal_id: 'prop1', voter_id: 'user1', vote: existingVote }]
+            : [];
+
+        const votesSelectResult = {
+            data: currentUserVote,
+            error: null,
+            // Allow top-level await: select('*') is directly thenable
+            then: (cb: any) => Promise.resolve(cb({ data: currentUserVote, error: null })),
+            eq: vi.fn().mockReturnValue({
+                then: (cb: any) => Promise.resolve(cb({ data: currentUserVote, error: null })),
+            }),
+        };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'votes') return {
+                insert: mockInsert,
+                update: mockUpdate,
+                delete: mockDelete,
+                select: vi.fn().mockReturnValue(votesSelectResult),
+            };
+            return safeMock();
+        });
+        const { result } = renderHook(() => useProposals('user1'));
+        return { result, mockInsert, mockUpdate, mockDelete };
         };
 
         it('casts a new Yes vote via insert', async () => {
@@ -196,8 +212,8 @@ describe('useProposals Hook', () => {
             { id: 'voter3', delegated_to: 'voter1' }, // global
             { id: 'voter4', delegated_to: null }
         ];
-        const mockCatDelegations = [
-            { user_id: 'voter4', category_id: 'cat-x', delegated_to: 'voter2' }
+        const mockPropDelegations = [
+            { user_id: 'voter4', proposal_id: 'prop-weighted', delegated_to: 'voter2' }
         ];
 
         const createBulletproofMock = (data: any = [], count: number = 0) => {
@@ -233,7 +249,7 @@ describe('useProposals Hook', () => {
                         : () => createBulletproofMock([]))
                 });
             }
-            if (table === 'category_delegations') return createBulletproofMock(mockCatDelegations);
+            if (table === 'proposal_delegations') return createBulletproofMock(mockPropDelegations);
             return createBulletproofMock([]);
         });
 

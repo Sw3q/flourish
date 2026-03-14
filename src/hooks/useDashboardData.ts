@@ -12,12 +12,6 @@ export type Profile = {
     atproto_app_password?: string;
 };
 
-export type CategoryDelegation = {
-    user_id: string;
-    category_id: string;
-    delegated_to: string;
-};
-
 export function useDashboardData() {
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
     const [members, setMembers] = useState<Profile[]>([]);
@@ -25,8 +19,8 @@ export function useDashboardData() {
     const [fundBalance, setFundBalance] = useState<number>(0);
     const [monthlyBurnRate, setMonthlyBurnRate] = useState<number>(0);
     const [loading, setLoading] = useState(true);
-    // Map of category_id → delegated_to user_id (for MY delegations)
-    const [categoryDelegations, setCategoryDelegations] = useState<Record<string, string>>({});
+    // Map of proposal_id → delegated_to user_id (per-proposal delegations for current user)
+    const [proposalDelegations, setProposalDelegations] = useState<Record<string, string>>({});
 
     useEffect(() => {
         fetchDashboardData();
@@ -53,7 +47,6 @@ export function useDashboardData() {
         if (profile) {
             setCurrentUser(profile as Profile);
         } else if (CONFIG.BYPASS_AUTH) {
-            // Provide a minimal mock profile if DB is empty
             setCurrentUser({
                 id: user.id,
                 email: user.email!,
@@ -79,16 +72,16 @@ export function useDashboardData() {
 
         setVotingPower(1 + (count || 0));
 
-        // Fetch my category-specific delegations
-        const { data: catDelegations } = await supabase
-            .from('category_delegations')
-            .select('category_id, delegated_to')
+        // Fetch my per-proposal delegations
+        const { data: propDelegations } = await supabase
+            .from('proposal_delegations')
+            .select('proposal_id, delegated_to')
             .eq('user_id', user.id);
 
-        if (catDelegations) {
+        if (propDelegations) {
             const map: Record<string, string> = {};
-            catDelegations.forEach(cd => { map[cd.category_id] = cd.delegated_to; });
-            setCategoryDelegations(map);
+            propDelegations.forEach(pd => { map[pd.proposal_id] = pd.delegated_to; });
+            setProposalDelegations(map);
         }
 
         // Fetch total pot balance
@@ -136,10 +129,26 @@ export function useDashboardData() {
         return false;
     };
 
-    // Global delegation — applies to all categories unless overridden
+    // Global delegation — applies to all proposals unless overridden per-proposal.
+    // Also: retracts all currently cast votes and clears all per-proposal delegations.
     const delegateVote = async (targetUserId: string | null) => {
         if (!currentUser) return false;
 
+        // 1. Clear all per-proposal delegations for this user
+        await supabase
+            .from('proposal_delegations')
+            .delete()
+            .eq('user_id', currentUser.id);
+
+        if (targetUserId !== null) {
+            // 2. Retract all votes cast by this user (they are now delegating globally)
+            await supabase
+                .from('votes')
+                .delete()
+                .eq('voter_id', currentUser.id);
+        }
+
+        // 3. Set global delegation
         const { error } = await supabase
             .from('profiles')
             .update({ delegated_to: targetUserId })
@@ -147,27 +156,29 @@ export function useDashboardData() {
 
         if (!error) {
             setCurrentUser({ ...currentUser, delegated_to: targetUserId });
+            setProposalDelegations({});
             return true;
         }
         return false;
     };
 
-    // Category-specific delegation — overrides global for a given category
-    const delegateVoteForCategory = async (categoryId: string, targetUserId: string | null) => {
+    // Per-proposal delegation — this proposal ONLY.
+    // Also retracts any existing vote for that specific proposal.
+    const delegateVoteForProposal = async (proposalId: string, targetUserId: string | null) => {
         if (!currentUser) return false;
 
         if (targetUserId === null) {
-            // Remove the category delegation (revert to global)
+            // Remove the proposal delegation (revert to global or no delegation)
             const { error } = await supabase
-                .from('category_delegations')
+                .from('proposal_delegations')
                 .delete()
                 .eq('user_id', currentUser.id)
-                .eq('category_id', categoryId);
+                .eq('proposal_id', proposalId);
 
             if (!error) {
-                setCategoryDelegations(prev => {
+                setProposalDelegations(prev => {
                     const next = { ...prev };
-                    delete next[categoryId];
+                    delete next[proposalId];
                     return next;
                 });
                 return true;
@@ -175,64 +186,68 @@ export function useDashboardData() {
             return false;
         }
 
-        // PostgREST silently fails on upsert conflicts for tables without a formal primary key id column.
-        // So we delete existing constraints and then insert the new one.
+        // 1. Retract any existing vote for this specific proposal
         await supabase
-            .from('category_delegations')
+            .from('votes')
+            .delete()
+            .eq('voter_id', currentUser.id)
+            .eq('proposal_id', proposalId);
+
+        // 2. Delete + insert (PostgREST upsert fails silently without formal PK)
+        await supabase
+            .from('proposal_delegations')
             .delete()
             .eq('user_id', currentUser.id)
-            .eq('category_id', categoryId);
+            .eq('proposal_id', proposalId);
 
         const { error } = await supabase
-            .from('category_delegations')
+            .from('proposal_delegations')
             .insert([{
                 user_id: currentUser.id,
-                category_id: categoryId,
+                proposal_id: proposalId,
                 delegated_to: targetUserId,
             }]);
 
         if (!error) {
-            setCategoryDelegations(prev => ({ ...prev, [categoryId]: targetUserId }));
+            setProposalDelegations(prev => ({ ...prev, [proposalId]: targetUserId }));
             return true;
         }
         return false;
     };
 
-    // Helper to calculate voting power for a specific category
-    // weight = 1 (self) + count of people who delegated to me (globally or for this specific category)
-    const getVotingPower = async (categoryId: string) => {
+    // Helper to calculate voting power for a specific proposal
+    const getVotingPower = async (proposalId: string) => {
         if (!currentUser) return 1;
 
-        const { data: globalDelegations } = await supabase
+        const { data: globalDelegators } = await supabase
             .from('profiles')
             .select('id')
             .eq('delegated_to', currentUser.id);
 
-        const { data: categoryDelegations } = await supabase
-            .from('category_delegations')
+        const { data: proposalDelegators } = await supabase
+            .from('proposal_delegations')
             .select('user_id')
             .eq('delegated_to', currentUser.id)
-            .eq('category_id', categoryId);
+            .eq('proposal_id', proposalId);
 
-        // We need to count unique people who effectively delegate to us for this category.
-        // A person P delegates to us if:
-        // 1. They have a category-specific delegation to us for this category.
-        // 2. OR they have a global delegation to us AND NO category-specific override for this category.
+        // Count unique people who effectively delegate to us for this proposal:
+        // 1. They have a proposal-specific delegation to us for this proposalId.
+        // 2. OR they have a global delegation to us AND NO proposal-specific override for this proposal.
 
-        const globalIds = (globalDelegations || []).map(d => d.id);
-        const catIds = (categoryDelegations || []).map(d => d.user_id);
+        const globalIds = (globalDelegators || []).map(d => d.id);
+        const propIds = (proposalDelegators || []).map(d => d.user_id);
 
-        // People delegating to us globally who DON'T have a category override
+        // Filter out global delegators who have a proposal-specific override
         const { data: overrides } = await supabase
-            .from('category_delegations')
+            .from('proposal_delegations')
             .select('user_id')
-            .in('user_id', globalIds)
-            .eq('category_id', categoryId);
+            .in('user_id', globalIds.length > 0 ? globalIds : ['00000000-0000-0000-0000-000000000000'])
+            .eq('proposal_id', proposalId);
         
         const overrideIds = new Set((overrides || []).map(o => o.user_id));
         const effectiveGlobalDelegators = globalIds.filter(id => !overrideIds.has(id));
 
-        const uniqueDelegators = new Set([...catIds, ...effectiveGlobalDelegators]);
+        const uniqueDelegators = new Set([...propIds, ...effectiveGlobalDelegators]);
         return 1 + uniqueDelegators.size;
     };
 
@@ -243,10 +258,10 @@ export function useDashboardData() {
         fundBalance,
         monthlyBurnRate,
         loading,
-        categoryDelegations,
+        proposalDelegations,
         updateAtProtoCredentials,
         delegateVote,
-        delegateVoteForCategory,
+        delegateVoteForProposal,
         getVotingPower,
         refreshData: fetchDashboardData,
     };

@@ -44,7 +44,7 @@ export function useProposals(currentUserId: string) {
         // Participation tracking: Direct votes + Delegated participation
         const { data: allVotes } = await supabase.from('votes').select('*');
         const { data: profile } = await supabase.from('profiles').select('delegated_to').eq('id', currentUserId).single();
-        const { data: catDelegations } = await supabase.from('category_delegations').select('*').eq('user_id', currentUserId);
+        const { data: propDelegations } = await supabase.from('proposal_delegations').select('*').eq('user_id', currentUserId);
 
         if (allVotes && props) {
             const pMap: Record<string, boolean> = {};
@@ -56,9 +56,9 @@ export function useProposals(currentUserId: string) {
                     pMap[proposal.id] = true;
                     userVoteMap[proposal.id] = directVote.vote;
                 } else {
-                    // Check delegation
-                    const catDelegate = catDelegations?.find(cd => cd.category_id === proposal.category_id)?.delegated_to;
-                    const effectiveDelegate = catDelegate || profile?.delegated_to;
+                    // Check proposal-specific delegation first, then fall back to global
+                    const proposalDelegate = propDelegations?.find(pd => pd.proposal_id === proposal.id)?.delegated_to;
+                    const effectiveDelegate = proposalDelegate || profile?.delegated_to;
                     
                     if (effectiveDelegate) {
                         const delegateVoted = allVotes.some(v => v.proposal_id === proposal.id && v.voter_id === effectiveDelegate);
@@ -88,16 +88,17 @@ export function useProposals(currentUserId: string) {
 
         const { data: allVotes } = await supabase.from('votes').select('proposal_id, voter_id, vote');
         const { data: allProfiles } = await supabase.from('profiles').select('id, delegated_to');
-        const { data: allCatDelegations } = await supabase.from('category_delegations').select('user_id, category_id, delegated_to');
+        const { data: allPropDelegations } = await supabase.from('proposal_delegations').select('user_id, proposal_id, delegated_to');
 
         if (!allVotes || !allProfiles) return;
 
         const globalDelegationMap: Record<string, string | null> = {};
         allProfiles.forEach(p => { globalDelegationMap[p.id] = p.delegated_to; });
 
-        const catDelegationMap: Record<string, string> = {};
-        if (allCatDelegations) {
-            allCatDelegations.forEach(cd => { catDelegationMap[`${cd.user_id}_${cd.category_id}`] = cd.delegated_to; });
+        // Map of "user_id_proposal_id" → delegated_to for proposal-specific overrides
+        const propDelegationMap: Record<string, string> = {};
+        if (allPropDelegations) {
+            allPropDelegations.forEach(pd => { propDelegationMap[`${pd.user_id}_${pd.proposal_id}`] = pd.delegated_to; });
         }
 
         const voteTotals: Record<string, { yes: number, total: number }> = {};
@@ -116,8 +117,9 @@ export function useProposals(currentUserId: string) {
                 // If this is the voter themselves, skip
                 if (p.id === v.voter_id) return;
 
-                const pCatKey = `${p.id}_${proposal.category_id}`;
-                const effectiveDelegate = catDelegationMap[pCatKey] ?? globalDelegationMap[p.id];
+                // Proposal-specific delegation takes precedence over global
+                const propKey = `${p.id}_${v.proposal_id}`;
+                const effectiveDelegate = propDelegationMap[propKey] ?? globalDelegationMap[p.id];
                 
                 // If this person p delegates to our voter v
                 if (effectiveDelegate === v.voter_id) {
