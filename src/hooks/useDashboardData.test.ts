@@ -16,10 +16,10 @@ describe('useDashboardData Hook', () => {
         expect(result.current.members).toEqual([]);
         expect(result.current.votingPower).toBe(1);
         expect(result.current.fundBalance).toBe(0);
-        expect(result.current.categoryDelegations).toEqual({});
+        expect(result.current.proposalDelegations).toEqual({});
     });
 
-    it('should load category delegations from supabase on init', async () => {
+    it('should load proposal delegations from supabase on init', async () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: { id: 'user1' } } });
 
         (supabase.from as any).mockImplementation((table: string) => {
@@ -32,11 +32,11 @@ describe('useDashboardData Hook', () => {
                     count: vi.fn().mockResolvedValue({ count: 0 }),
                 })
             };
-            if (table === 'category_delegations') return {
+            if (table === 'proposal_delegations') return {
                 select: () => ({
                     eq: vi.fn().mockResolvedValue({ data: [
-                        { category_id: 'cat1', delegated_to: 'user2' },
-                        { category_id: 'cat2', delegated_to: 'user3' },
+                        { proposal_id: 'prop1', delegated_to: 'user2' },
+                        { proposal_id: 'prop2', delegated_to: 'user3' },
                     ]})
                 })
             };
@@ -47,33 +47,32 @@ describe('useDashboardData Hook', () => {
         const { result } = renderHook(() => useDashboardData());
 
         await waitFor(() => {
-            expect(result.current.categoryDelegations['cat1']).toBe('user2');
-            expect(result.current.categoryDelegations['cat2']).toBe('user3');
+            expect(result.current.proposalDelegations['prop1']).toBe('user2');
+            expect(result.current.proposalDelegations['prop2']).toBe('user3');
         });
     });
 
-    it('should upsert a category delegation via delegateVoteForCategory', async () => {
+    it('should upsert a proposal delegation via delegateVoteForProposal', async () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useDashboardData());
 
-        // Manually set currentUser via the loading flow result
         // Since user is null, we test the null-guard path
         let success;
         await act(async () => {
-            success = await result.current.delegateVoteForCategory('cat1', 'user2');
+            success = await result.current.delegateVoteForProposal('prop1', 'user2');
         });
 
         // Should return false because currentUser is null
         expect(success).toBe(false);
     });
 
-    it('should remove a category delegation when targetUserId is null', async () => {
+    it('should remove a proposal delegation when targetUserId is null', async () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useDashboardData());
 
         let success;
         await act(async () => {
-            success = await result.current.delegateVoteForCategory('cat1', null);
+            success = await result.current.delegateVoteForProposal('prop1', null);
         });
 
         // Should return false because currentUser is null
@@ -92,14 +91,13 @@ describe('useDashboardData Hook', () => {
         expect(success).toBe(false);
     });
 
-    it('should calculate category-specific voting power correctly', async () => {
+    it('should calculate proposal-specific voting power correctly', async () => {
         const userId = 'me';
         (supabase.auth.getUser as any).mockResolvedValue({ data: { user: { id: userId } } });
 
         const createBulletproofMock = (data: any = [], count: number = 0) => {
             const chain: any = {
                 data, count, error: null,
-                // These will be returned by the proxy if called
                 then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
                 catch: (cb: any) => Promise.resolve(cb(null)),
                 finally: (cb: any) => Promise.resolve(cb()),
@@ -109,7 +107,6 @@ describe('useDashboardData Hook', () => {
                 get(target, prop) {
                     if (prop in target) return target[prop];
                     if (typeof prop === 'string') {
-                        // Return a function that returns the proxy for chaining
                         return () => new Proxy(target, this);
                     }
                     return target[prop];
@@ -135,7 +132,7 @@ describe('useDashboardData Hook', () => {
                     }
                 });
             }
-            if (table === 'category_delegations') {
+            if (table === 'proposal_delegations') {
                 return new Proxy({}, {
                     get: (_, prop) => {
                         if (prop === 'select') return () => new Proxy({}, {
@@ -166,7 +163,7 @@ describe('useDashboardData Hook', () => {
 
         let power;
         await act(async () => {
-            power = await result.current.getVotingPower('cat1');
+            power = await result.current.getVotingPower('prop1');
         });
 
         expect(power).toBe(3);
@@ -210,7 +207,7 @@ describe('useDashboardData Hook', () => {
                 });
                 return mock;
             }
-            if (table === 'category_delegations') return createChainMock([]);
+            if (table === 'proposal_delegations') return createChainMock([]);
             if (table === 'transactions') return createChainMock([]);
             if (table === 'recurring_expenses') return createChainMock([]);
             return createChainMock([]);
