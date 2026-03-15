@@ -8,6 +8,8 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
     - [ ] Refine Hypercert display on the main dashboard.
 
 ## Completed Tasks History
+- **Phase 23.5**: Separated active proposals into "To Vote" (unvoted) and "My Votes" (voted) tabs. Added auto-swipe animation upon voting. Updated UI unit tests.
+- **Phase 23**: Implemented core Tinder-style single-card UI with ←/→ navigation.
 - **Phase 19**: Implemented `BYPASS_AUTH` mode in `config.ts`, `AuthLayout.tsx`, `useDashboardData.ts`, and `useAdminActions.ts`.
 - **Phase 20**: Integrated Hypercerts impact tracking using ATProto; implemented handle resolution, record creation (`org.hypercerts.claim`), and participation-based issuance logic.
 - **Phase 21**: Streamlined Hypercert flow with persistent user credentials (`atproto_handle`, `atproto_app_password`), decentralized issuance to participants, and cleaned up redundant Admin UI.

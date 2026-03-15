@@ -6,6 +6,7 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 - **Phase 22: Next Steps**: Potential refinements for impact tracking or governance expansions.
 
 ## Completed Plans History
+- **Phase 23 & 23.5 (Tinder-style Voting UI)**: Replaced the active proposals grid with a swipeable, single-card navigator. Added "To Vote" vs "My Votes" tab system with auto-swipe-to-dismiss functionality upon voting.
 - **Phase 11 & 14 (Recurring Expenses & Admin Enhancements)**: Implemented `recurring_expenses` schema, admin controls, inline editing, and user transparency metrics.
 - **Phase 12 (Voting System Refinement)**: Implemented conviction voting (24h majority/quorum maintenance), category-specific voting power, and delegation-override logic.
 - **Phase 13 (Admin Dashboard Fixes)**: Resolved RLS and query sorting bugs for the Admin Dashboard.

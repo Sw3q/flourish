@@ -5,7 +5,7 @@ This document serves as the project-specific AI operating system for the Flouris
 ## 1. Project Overview & Core Mechanics
 The Flourish Fund is a React/Vite/TypeScript web application managing a communal pot for the "Human Flourishing Floor". 
 *   **Authentication**: Strict manual verification. Admin must approve new accounts before they can view or vote (`PendingApproval.tsx`).
-*   **Proposals**: Communal spending requests with predefined categories and customizable expiration durations (minimum 3 days) (`AdminDashboard.tsx`, `ProposalsList.tsx`).
+*   **Proposals**: Communal spending requests with predefined categories and customizable expiration durations (minimum 3 days). Rendered via a Tinder-style swipeable card deck (`AdminDashboard.tsx`, `ProposalsList.tsx`).
 *   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category using `useDashboardData.ts`).
 *   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.
@@ -43,3 +43,4 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Client-Side Evaluation**: Do not determine if a proposal "Passed" on the client. Trust the `status` column strictly enforced by Postgres.
 *   **Unapproved Actions**: Do not allow unapproved users to access the main Dashboard or Admin Dashboard.
 *   **Over-Engineering UI**: "Keep it simple and maintainable." Do not add complicated state machines to standard buttons.
+*   **Grid layouts for Proposals**: Active proposals must use the built-in Tinder-style swipeable card navigator split by "To Vote" and "My Votes" tabs, not a multi-column grid, to preserve focus.

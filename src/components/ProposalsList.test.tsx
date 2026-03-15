@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ProposalsList from './ProposalsList';
 import { useProposals } from '../hooks/useProposals';
@@ -67,18 +67,19 @@ describe('ProposalsList Component — Delegation Rendering', () => {
     it('shows voting buttons when NO delegation is active for any proposal', async () => {
         render(<ProposalsList {...defaultProps} />);
 
+        // Only one card is shown at a time
         const yesButtons = await screen.findAllByText(/Yes \(1\)/);
-        expect(yesButtons.length).toBe(2); // both proposals show Yes button
+        expect(yesButtons.length).toBe(1); 
         expect(screen.queryByText(/Voting power delegated/)).toBeNull();
     });
 
     it('hides all voting buttons when global delegation is set', async () => {
         render(<ProposalsList {...defaultProps} globalDelegatedTo="user-2" />);
 
-        // No Yes buttons — both proposals are delegated globally
+        // No Yes buttons — the visible proposal is delegated globally
         expect(screen.queryByText(/Yes \(1\)/)).toBeNull();
         const delegatedMsgs = screen.getAllByText(/Voting power delegated/);
-        expect(delegatedMsgs.length).toBe(2);
+        expect(delegatedMsgs.length).toBe(1);
     });
 
     it('hides buttons only for the specific proposal when per-proposal delegation is set', async () => {
@@ -90,10 +91,13 @@ describe('ProposalsList Component — Delegation Rendering', () => {
             />
         );
 
-        // prop-1 should show "Voting power delegated"
+        // prop-1 (visible initially) should show "Voting power delegated"
         expect(screen.getByText(/Voting power delegated/)).toBeDefined();
 
-        // prop-2 should still show Yes button (async because it waits for power fetch)
+        // Navigate to prop-2
+        fireEvent.click(screen.getByLabelText('Next proposal'));
+
+        // prop-2 should still show Yes button
         expect(await screen.findByText(/Yes \(1\)/)).toBeDefined();
     });
 
@@ -105,11 +109,72 @@ describe('ProposalsList Component — Delegation Rendering', () => {
             />
         );
 
-        // Exactly 1 delegation message (for prop-1)
-        const delegatedMsgs = screen.getAllByText(/Voting power delegated/);
+        // Exactly 1 delegation message for prop-1
+        let delegatedMsgs = screen.getAllByText(/Voting power delegated/);
         expect(delegatedMsgs.length).toBe(1);
+
+        // Navigate to prop-2
+        fireEvent.click(screen.getByLabelText('Next proposal'));
 
         // prop-2 (same category-1) should still render its Yes button
         expect(await screen.findByText(/Yes \(1\)/)).toBeDefined();
+    });
+});
+
+describe('ProposalsList Component — Tab Navigation & Swipe-to-Dismiss', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        // Since userVotes is empty initially, both mock proposals are unvoted
+        (useProposals as any).mockReturnValue({
+            ...mockUseProposals,
+            userVotes: {},
+        });
+    });
+
+    it('shows the To Vote tab with unvoted proposals by default', () => {
+        render(<ProposalsList {...defaultProps} />);
+        
+        // Tab exists and shows correct counts
+        expect(screen.getByText('To Vote')).toBeDefined();
+        expect(screen.getByText('My Votes')).toBeDefined();
+        
+        // Counter "1 of 2" in the To Vote tab
+        expect(screen.getByText('1 of 2')).toBeDefined();
+        
+        // The first card's title is visible
+        expect(screen.getByText('Test Proposal')).toBeDefined();
+    });
+
+    it('moves a proposal to My Votes when voted on', async () => {
+        // We'll mock castVote to simulate the user voting, 
+        // but since we don't have a real DB backend in the unit test, 
+        // we test the internal state / mock update mechanism.
+        // For testing the component behavior, we can remock useProposals midway.
+
+        const { rerender } = render(<ProposalsList {...defaultProps} />);
+        
+        expect(screen.getByText('1 of 2')).toBeDefined();
+
+        // Simulate casting a vote from the app layer
+        (useProposals as any).mockReturnValue({
+            ...mockUseProposals,
+            userVotes: { [PROPOSAL_ID]: true }, // User voted YES on prop-1
+        });
+
+        // Re-render with the updated hook state
+        rerender(<ProposalsList {...defaultProps} />);
+
+        // Now To Vote tab only has 1 proposal (prop-2)
+        expect(screen.getByText('1 of 1')).toBeDefined();
+        
+        // The visible card in To Vote should now be prop-2
+        expect(screen.getByText('Other Proposal in Same Category')).toBeDefined();
+        expect(screen.queryByText('Test Proposal')).toBeNull();
+
+        // Switch to My Votes tab
+        fireEvent.click(screen.getByText('My Votes'));
+
+        // The voted proposal should be here
+        expect(screen.getByText('Test Proposal')).toBeDefined();
     });
 });
