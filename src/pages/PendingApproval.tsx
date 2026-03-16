@@ -15,8 +15,9 @@ export default function PendingApproval() {
         setChecking(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            const { data } = await supabase.from('profiles').select('is_approved').eq('id', user.id).single();
-            if (data?.is_approved) {
+            const { data } = await supabase.from('profiles').select('is_approved, role').eq('id', user.id).single();
+            const isAdmin = data?.role === 'admin' || data?.role === 'super_admin';
+            if (data?.is_approved || isAdmin) {
                 navigate('/');
             }
         }

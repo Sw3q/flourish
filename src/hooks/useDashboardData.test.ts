@@ -23,25 +23,29 @@ describe('useDashboardData Hook', () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: { id: 'user1' } } });
 
         (supabase.from as any).mockImplementation((table: string) => {
-            if (table === 'profiles') return {
-                select: () => ({
-                    eq: vi.fn().mockReturnValue({
-                        single: vi.fn().mockResolvedValue({ data: { id: 'user1', email: 'u@test.com', delegated_to: null, role: 'member' } }),
-                        neq: vi.fn().mockResolvedValue({ data: [] }),
-                    }),
-                    count: vi.fn().mockResolvedValue({ count: 0 }),
-                })
+            const chainMock = (data: any) => {
+                const chain: any = {
+                    data, count: 0, error: null,
+                    then: (cb: any) => Promise.resolve(cb({ data, count: 0, error: null })),
+                    single: vi.fn().mockResolvedValue({ data }),
+                };
+                return new Proxy(chain, {
+                    get(target, prop) {
+                        if (prop in target) return target[prop];
+                        if (typeof prop === 'string') return () => new Proxy(target, this);
+                        return target[prop];
+                    }
+                });
             };
+
+            if (table === 'profiles') return { select: () => chainMock({ id: 'user1', email: 'u@test.com', delegated_to: null, role: 'member', floor_id: 'floor1' }) };
             if (table === 'proposal_delegations') return {
-                select: () => ({
-                    eq: vi.fn().mockResolvedValue({ data: [
-                        { proposal_id: 'prop1', delegated_to: 'user2' },
-                        { proposal_id: 'prop2', delegated_to: 'user3' },
-                    ]})
-                })
+                select: () => chainMock([
+                    { proposal_id: 'prop1', delegated_to: 'user2' },
+                    { proposal_id: 'prop2', delegated_to: 'user3' },
+                ])
             };
-            if (table === 'transactions') return { select: vi.fn().mockResolvedValue({ data: [] }) };
-            return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], count: 0 }) }) };
+            return { select: () => chainMock([]) };
         });
 
         const { result } = renderHook(() => useDashboardData());
@@ -115,47 +119,36 @@ describe('useDashboardData Hook', () => {
         };
 
         (supabase.from as any).mockImplementation((table: string) => {
-            if (table === 'profiles') {
-                return new Proxy({}, {
-                    get: (_, prop) => {
-                        if (prop === 'select') return () => new Proxy({}, {
-                            get: (_, p) => {
-                                if (p === 'eq') return (col: string, val: any) => {
-                                    if (col === 'id' && val === userId) return createBulletproofMock({ id: userId, email: 'me@test.com' });
+            return new Proxy({}, {
+                get: (_, prop) => {
+                    if (prop === 'select') return () => new Proxy({}, {
+                        get: (_, p) => {
+                            if (p === 'eq') return (col: string, val: any) => {
+                                if (table === 'profiles') {
+                                    if (col === 'id' && val === userId) return createBulletproofMock({ id: userId, email: 'me@test.com', floor_id: 'floor1' });
                                     if (col === 'delegated_to' && val === userId) return createBulletproofMock([{ id: 'userA' }, { id: 'userB' }]);
-                                    return createBulletproofMock([]);
-                                };
-                                return () => createBulletproofMock([]);
-                            }
-                        });
-                        return () => createBulletproofMock([]);
-                    }
-                });
-            }
-            if (table === 'proposal_delegations') {
-                return new Proxy({}, {
-                    get: (_, prop) => {
-                        if (prop === 'select') return () => new Proxy({}, {
-                            get: (_, p) => {
-                                if (p === 'eq') return (col: string, val: any) => {
+                                }
+                                if (table === 'proposal_delegations') {
                                     if (col === 'delegated_to' && val === userId) {
                                         return new Proxy({}, {
                                             get: (_, p2) => (p2 === 'eq' ? () => createBulletproofMock([{ user_id: 'userC' }]) : () => createBulletproofMock([]))
                                         });
                                     }
-                                    return createBulletproofMock([]);
-                                };
-                                if (p === 'in') return () => new Proxy({}, {
-                                    get: (_, p2) => (p2 === 'eq' ? () => createBulletproofMock([{ user_id: 'userB' }]) : () => createBulletproofMock([]))
-                                });
-                                return () => createBulletproofMock([]);
-                            }
-                        });
-                        return () => createBulletproofMock([]);
-                    }
-                });
-            }
-            return createBulletproofMock([]);
+                                }
+                                return createBulletproofMock([]);
+                            };
+                            if (p === 'in') return () => new Proxy({}, {
+                                get: (_, p2) => (p2 === 'eq' ? () => createBulletproofMock([{ user_id: 'userB' }]) : () => createBulletproofMock([]))
+                            });
+                            return () => createBulletproofMock([]);
+                        }
+                    });
+                    if (prop === 'delete') return () => new Proxy({}, { get: () => () => createBulletproofMock() });
+                    if (prop === 'update') return () => new Proxy({}, { get: () => () => createBulletproofMock() });
+                    if (prop === 'insert') return () => createBulletproofMock();
+                    return () => createBulletproofMock([]);
+                }
+            });
         });
 
         const { result } = renderHook(() => useDashboardData());
@@ -173,13 +166,12 @@ describe('useDashboardData Hook', () => {
         const userId = 'me';
         (supabase.auth.getUser as any).mockResolvedValue({ data: { user: { id: userId } } });
 
-        const mockProfile = { id: userId, email: 'me@test.com', role: 'member' };
+        const mockProfile = { id: userId, email: 'me@test.com', role: 'member', floor_id: 'floor1' };
         
         const updateMock = vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ error: null })
         });
 
-        // Use a more robust mock factory for chaining
         const createChainMock = (data: any = null, error: any = null) => {
             const mock: any = {
                 select: vi.fn().mockReturnThis(),
@@ -194,23 +186,25 @@ describe('useDashboardData Hook', () => {
         };
 
         (supabase.from as any).mockImplementation((table: string) => {
-            if (table === 'profiles') {
-                const mock = createChainMock(mockProfile);
-                // Custom overrides for specific chains in fetchDashboardData
-                mock.select = vi.fn().mockReturnValue({
-                    eq: vi.fn().mockImplementation((col: string, _val: any) => {
-                        if (col === 'id') return { single: () => Promise.resolve({ data: mockProfile }) };
-                        if (col === 'delegated_to') return { head: true, count: 'exact', then: (cb: any) => Promise.resolve(cb({ count: 0 })) };
-                        return createChainMock([]);
-                    }),
-                    neq: vi.fn().mockReturnThis(),
-                });
-                return mock;
-            }
-            if (table === 'proposal_delegations') return createChainMock([]);
-            if (table === 'transactions') return createChainMock([]);
-            if (table === 'recurring_expenses') return createChainMock([]);
-            return createChainMock([]);
+            const mock = createChainMock(table === 'profiles' ? mockProfile : []);
+            
+            mock.select = vi.fn().mockReturnValue({
+                eq: vi.fn().mockImplementation((col: string) => {
+                    if (table === 'profiles' && col === 'id') return { single: () => Promise.resolve({ data: mockProfile }) };
+                    
+                    // Allow arbitrary chaining of .eq().eq()...
+                    const returnChain: any = {
+                        single: () => Promise.resolve({ data: table === 'profiles' ? mockProfile : [] }),
+                        neq: () => returnChain,
+                        eq: () => returnChain,
+                        then: (cb: any) => Promise.resolve(cb({ data: [], count: 0 }))
+                    };
+                    return returnChain;
+                }),
+                neq: vi.fn().mockReturnThis(),
+            });
+
+            return mock;
         });
 
         const { result } = renderHook(() => useDashboardData());

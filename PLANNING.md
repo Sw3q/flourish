@@ -3,17 +3,10 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 22: Next Steps**: Potential refinements for impact tracking or governance expansions.
+- **Phase 26: Impact Visualization**: Enhance Hypercert displays and automate impact reporting for passed proposals.
+- **Phase 27: Governance Refinement**: Consider global vs floor-specific voting power configurations for super_admins.
 
 ## Completed Plans History
-- **Phase 23 & 23.5 (Tinder-style Voting UI)**: Replaced the active proposals grid with a swipeable, single-card navigator. Added "To Vote" vs "My Votes" tab system with auto-swipe-to-dismiss functionality upon voting.
-- **Phase 11 & 14 (Recurring Expenses & Admin Enhancements)**: Implemented `recurring_expenses` schema, admin controls, inline editing, and user transparency metrics.
-- **Phase 12 (Voting System Refinement)**: Implemented conviction voting (24h majority/quorum maintenance), category-specific voting power, and delegation-override logic.
-- **Phase 13 (Admin Dashboard Fixes)**: Resolved RLS and query sorting bugs for the Admin Dashboard.
-- **Phase 15 (Proposal Expiration Time)**: Implemented customizable proposal duration times (minimum 3 days) during proposal creation.
-- **Phase 16 (Authentication Redirect Fix)**: Implemented dynamic `emailRedirectTo` logic in `signUp` to ensure confirmation emails point to the correct site origin.
-- **Phase 17 (Redirect to Pending after Auth)**: Implemented redirect to `/pending` page after email verification in `signUp` options.
-- **Phase 18 (Email Rate Limit Handling)**: Improved UX for rate limit errors and provided SMTP configuration guidance.
-- **Phase 19 (Optional Auth Bypass)**: Implemented a toggleable bypass for local development, allowing users to skip login/approval steps via `CONFIG.BYPASS_AUTH`.
-- **Phase 20 (Hypercerts Integration)**: Enabled impact tracking via ATProto hypercerts for passed proposals and support for decentralized identity linking (Profile ↔ DID).
-- **Phase 21 (Persistent Credentials & Admin Cleanup)**: Implemented secure storage for ATProto credentials in user profiles, streamlined issuance flow with auto-population, and removed redundant admin-only issuance UI.
+- **Phase 25 (Building View Navigation)**: Implemented `BuildingView.tsx` with interactive tower navigation. Refactored routing to `/floor/:floorId` and implemented cross-floor read-only access for transparency.
+- **Phase 24 (Multi-Floor Architecture)**: Transformed the system into a multi-tenant application with scoped data (`floor_id`), role-based access (`super_admin`), and recursive RLS safety.
+- **Outdated Plans**: Tinder UI (23), Recurring Expenses (11, 14), Conviction Voting (12), Hypercerts (20, 21), Auth Bypass (19), Fixes (13, 16, 17, 18).

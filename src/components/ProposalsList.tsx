@@ -4,6 +4,17 @@ import { useProposals, type Proposal } from '../hooks/useProposals';
 import HypercertIssuanceModal from './HypercertIssuanceModal';
 import type { Profile } from '../hooks/useDashboardData';
 
+export interface ProposalsListProps {
+    currentUserId: string;
+    currentFloorId: string | null;
+    members: any[];
+    proposalDelegations: Record<string, string>;
+    globalDelegatedTo: string | null;
+    onDelegateProposal: (proposalId: string, targetUserId: string | null) => Promise<boolean>;
+    getVotingPower: (proposalId: string) => Promise<number>;
+    disabled?: boolean;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Countdown Timer Sub-Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,12 +199,14 @@ function VoteButton({
     isActive,
     onVote,
     getVotingPower,
+    disabled = false,
 }: {
     proposalId: string;
     isYes: boolean;
     isActive: boolean;
     onVote: (id: string, yes: boolean) => Promise<void>;
     getVotingPower: (proposalId: string) => Promise<number>;
+    disabled?: boolean;
 }) {
     const [power, setPower] = useState<number | null>(null);
 
@@ -203,12 +216,13 @@ function VoteButton({
 
     return (
         <button
-            onClick={() => onVote(proposalId, isYes)}
+            onClick={() => !disabled && onVote(proposalId, isYes)}
+            disabled={disabled}
             title={isActive ? `Click to retract your ${isYes ? 'Yes' : 'No'} vote` : `Vote ${isYes ? 'Yes' : 'No'}`}
             className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${isActive
                 ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-offset-1 ring-green-400'
                 : 'bg-slate-50 text-slate-600 hover:bg-green-100 hover:text-green-700 border border-slate-100'
-                }`}
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
             <ThumbsUp className={`w-4 h-4 mr-2 ${isActive ? 'animate-bounce' : ''}`} />
             Yes ({power ?? '...'})
@@ -221,19 +235,14 @@ function VoteButton({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ProposalsList({
     currentUserId,
+    currentFloorId,
     members,
     proposalDelegations,
     globalDelegatedTo,
     onDelegateProposal,
     getVotingPower,
-}: {
-    currentUserId: string;
-    members: Profile[];
-    proposalDelegations: Record<string, string>;
-    globalDelegatedTo: string | null;
-    onDelegateProposal: (proposalId: string, targetId: string | null) => Promise<boolean>;
-    getVotingPower: (proposalId: string) => Promise<number>;
-}) {
+    disabled = false,
+} : ProposalsListProps) {
     const {
         proposals,
         categories,
@@ -245,7 +254,7 @@ export default function ProposalsList({
         castVote,
         deleteProposal,
         updateProposalHypercert,
-    } = useProposals(currentUserId);
+    } = useProposals(currentUserId, currentFloorId);
 
     // New Proposal Form State
     const [isCreating, setIsCreating] = useState(false);
@@ -411,14 +420,16 @@ export default function ProposalsList({
                                 isActive={userVotes[proposal.id] === true}
                                 onVote={handleVoteWithSwipe}
                                 getVotingPower={getVotingPower}
+                                disabled={disabled}
                             />
                             <button
-                                onClick={() => handleVoteWithSwipe(proposal.id, false)}
+                                onClick={() => !disabled && handleVoteWithSwipe(proposal.id, false)}
+                                disabled={disabled}
                                 title={userVotes[proposal.id] === false ? 'Click to retract your No vote' : 'Vote No'}
                                 className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${userVotes[proposal.id] === false
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-offset-1 ring-red-400'
                                     : 'bg-slate-50 text-slate-600 hover:bg-red-100 hover:text-red-700 border border-slate-100'
-                                    }`}
+                                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <ThumbsDown className="w-4 h-4 mr-2" />
                                 No

@@ -9,12 +9,16 @@ export default function AuthLayout() {
     const [loading, setLoading] = useState(true);
     const [isApproved, setIsApproved] = useState<boolean | null>(null);
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const [userRole, setUserRole] = useState<string>('member');
+    const [currentFloorId, setCurrentFloorId] = useState<string | null>(null);
 
     useEffect(() => {
         if (CONFIG.BYPASS_AUTH) {
             setSession({ user: { id: '00000000-0000-0000-0000-000000000000', email: 'demo@flourish.test' } });
             setIsApproved(true);
             setIsAdmin(true);
+            setUserRole('super_admin');
+            setCurrentFloorId('00000000-0000-0000-0000-000000000000');
             setLoading(false);
             return;
         }
@@ -42,12 +46,15 @@ export default function AuthLayout() {
     const checkApproval = async (userId: string) => {
         const { data } = await supabase
             .from('profiles')
-            .select('is_approved, role')
+            .select('is_approved, role, floor_id')
             .eq('id', userId)
             .single();
 
-        setIsApproved(data?.is_approved ?? false);
-        setIsAdmin(data?.role === 'admin');
+        const isUserAdmin = data?.role === 'admin' || data?.role === 'super_admin';
+        setIsApproved(data?.is_approved || isUserAdmin || false);
+        setIsAdmin(isUserAdmin);
+        setUserRole(data?.role || 'member');
+        setCurrentFloorId(data?.floor_id || null);
         setLoading(false);
     };
 
@@ -78,17 +85,17 @@ export default function AuthLayout() {
             <nav className="bg-white shadow-sm border-b border-primary-100 sticky top-0 z-50">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
-                        <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
+                        <Link to="/building" className="flex items-center hover:opacity-80 transition-opacity">
                             <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                                Flourish Fund
+                                Frontier Tower Fund
                             </span>
                         </Link>
                         <div className="flex items-center space-x-4">
                             <Link
-                                to="/"
+                                to="/building"
                                 className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
                             >
-                                Dashboard
+                                Tower
                             </Link>
                             {isAdmin && (
                                 <Link
@@ -109,7 +116,7 @@ export default function AuthLayout() {
                 </div>
             </nav>
             <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Outlet />
+                <Outlet context={{ currentFloorId, userRole }} />
             </main>
         </div>
     );

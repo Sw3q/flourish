@@ -5,7 +5,7 @@ import { CONFIG } from '../config';
 export type Profile = {
     id: string;
     email: string;
-    role: 'admin' | 'member';
+    role: 'admin' | 'member' | 'super_admin';
     is_approved: boolean;
 };
 
@@ -20,12 +20,13 @@ export type RecurringExpense = {
     title: string;
     amount: number;
     category_id: string;
+    floor_id?: string;
     is_active: boolean;
     created_at: string;
     categories?: { name: string; color_theme: string };
 };
 
-export function useAdminActions() {
+export function useAdminActions(currentFloorId: string | null, currentUserRole?: string) {
     const [users, setUsers] = useState<Profile[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
@@ -38,22 +39,28 @@ export function useAdminActions() {
     }, []);
 
     const fetchCategories = async () => {
-        const { data } = await supabase.from('categories').select('*').order('name');
-        if (data) setCategories(data);
+        let q = supabase.from('categories').select('*').order('name');
+        if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
+        
+        const { data } = await q;
+        if (data) setCategories(data as Category[]);
     };
 
     const fetchRecurringExpenses = async () => {
-        const { data } = await supabase
-            .from('recurring_expenses')
-            .select('*, categories(name, color_theme)')
-            .order('created_at', { ascending: false });
+        let q = supabase.from('recurring_expenses').select('*, categories(name, color_theme)').order('created_at', { ascending: false });
+        if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
+
+        const { data } = await q;
         if (data) setRecurringExpenses(data as RecurringExpense[]);
     };
 
     const fetchFundBalance = async () => {
-        const { data } = await supabase.from('transactions').select('amount, type');
+        let q = supabase.from('transactions').select('amount, type');
+        if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
+
+        const { data } = await q;
         if (data) {
-            const balance = data.reduce((acc, curr) => {
+            const balance = data.reduce((acc: number, curr: any) => {
                 return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
             }, 0);
             setFundBalance(balance);
@@ -61,11 +68,10 @@ export function useAdminActions() {
     };
 
     const fetchUsers = async () => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('email', { ascending: true });
+        let q = supabase.from('profiles').select('*').order('email', { ascending: true });
+        if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
 
+        const { data } = await q;
         if (data) setUsers(data as Profile[]);
         setLoading(false);
     };
@@ -78,7 +84,10 @@ export function useAdminActions() {
         }
 
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
         const { data } = await supabase
             .from('profiles')
@@ -86,7 +95,7 @@ export function useAdminActions() {
             .eq('id', user.id)
             .single();
 
-        if (data?.role === 'admin') {
+        if (data?.role === 'admin' || data?.role === 'super_admin') {
             setIsAdmin(true);
             await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
         } else {
@@ -95,11 +104,11 @@ export function useAdminActions() {
     };
 
     const createCategory = async (name: string, color: string) => {
-        if (!name.trim()) return;
+        if (!name.trim() || !currentFloorId) return false;
 
         const { data, error } = await supabase
             .from('categories')
-            .insert([{ name, color_theme: color }])
+            .insert([{ name, color_theme: color, floor_id: currentFloorId }])
             .select()
             .single();
 
@@ -111,11 +120,11 @@ export function useAdminActions() {
     };
 
     const addFunds = async (amount: number) => {
-        if (isNaN(amount) || amount <= 0) return false;
+        if (isNaN(amount) || amount <= 0 || !currentFloorId) return false;
 
         const { error } = await supabase
             .from('transactions')
-            .insert([{ amount, type: 'deposit', description: 'Admin Manual Deposit' }]);
+            .insert([{ amount, type: 'deposit', description: 'Admin Manual Deposit', floor_id: currentFloorId }]);
 
         if (!error) {
             setFundBalance((prev: number) => prev + amount);
@@ -151,13 +160,40 @@ export function useAdminActions() {
     };
 
     const promoteUser = async (userId: string) => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return false;
+
+        let nextRole: 'admin' | 'super_admin' = 'admin';
+        if (user.role === 'admin') nextRole = 'super_admin';
+        if (user.role === 'super_admin') return false;
+
         const { error } = await supabase
             .from('profiles')
-            .update({ role: 'admin' })
+            .update({ role: nextRole, is_approved: true })
             .eq('id', userId);
 
         if (!error) {
-            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: 'admin' } : u));
+            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: nextRole, is_approved: true } : u));
+            return true;
+        }
+        return false;
+    };
+
+    const demoteUser = async (userId: string) => {
+        const user = users.find(u => u.id === userId);
+        if (!user) return false;
+
+        let nextRole: 'admin' | 'member' = 'member';
+        if (user.role === 'super_admin') nextRole = 'admin';
+        if (user.role === 'member') return false;
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ role: nextRole })
+            .eq('id', userId);
+
+        if (!error) {
+            setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: nextRole } : u));
             return true;
         }
         return false;
@@ -172,11 +208,11 @@ export function useAdminActions() {
     };
 
     const createRecurringExpense = async (title: string, amount: number, categoryId: string) => {
-        if (!title.trim() || isNaN(amount) || amount <= 0 || !categoryId) return false;
+        if (!title.trim() || isNaN(amount) || amount <= 0 || !categoryId || !currentFloorId) return false;
 
         const { data, error } = await supabase
             .from('recurring_expenses')
-            .insert([{ title, amount, category_id: categoryId }])
+            .insert([{ title, amount, category_id: categoryId, floor_id: currentFloorId }])
             .select('*, categories(name, color_theme)')
             .single();
 
@@ -223,7 +259,8 @@ export function useAdminActions() {
             .insert([{ 
                 amount: expense.amount, 
                 type: 'withdrawal', 
-                description: `Recurring Expense: ${expense.title}` 
+                description: `Recurring Expense: ${expense.title}`,
+                floor_id: expense.floor_id || currentFloorId
             }]);
 
         if (!error) {
@@ -245,6 +282,7 @@ export function useAdminActions() {
         approveUser,
         revokeUser,
         promoteUser,
+        demoteUser,
         deleteProposal,
         createRecurringExpense,
         toggleRecurringExpense,

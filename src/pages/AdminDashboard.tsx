@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, X, ShieldAlert, UserCheck, Shield } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { Check, X, ShieldAlert, UserCheck, Shield, ShieldOff } from 'lucide-react';
 import { useAdminActions, type RecurringExpense } from '../hooks/useAdminActions';
 
 const getThemeClass = (theme: string) => {
@@ -14,6 +15,8 @@ const getThemeClass = (theme: string) => {
 };
 
 export default function AdminDashboard() {
+    const { currentFloorId, userRole } = useOutletContext<{ currentFloorId: string | null; userRole: string }>();
+
     const {
         users,
         categories,
@@ -26,11 +29,12 @@ export default function AdminDashboard() {
         approveUser,
         revokeUser,
         promoteUser,
+        demoteUser,
         createRecurringExpense,
         toggleRecurringExpense,
         updateRecurringExpense,
         processRecurringExpense,
-    } = useAdminActions();
+    } = useAdminActions(currentFloorId, userRole);
 
     // Form states
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -82,6 +86,10 @@ export default function AdminDashboard() {
 
     const handlePromote = async (userId: string) => {
         await promoteUser(userId);
+    };
+    
+    const handleDemote = async (userId: string) => {
+        await demoteUser(userId);
     };
 
     const startEditExpense = (expense: RecurringExpense) => {
@@ -171,32 +179,45 @@ export default function AdminDashboard() {
                                         <div className="text-sm font-medium text-slate-900">{user.email}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin'
-                                            ? 'bg-primary-100 text-primary-800'
-                                            : 'bg-emerald-100 text-emerald-800'
-                                            }`}>
-                                            {user.role}
+                                        <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            user.role === 'super_admin' ? 'bg-purple-100 text-purple-800 border border-purple-200 shadow-sm' :
+                                            user.role === 'admin' ? 'bg-primary-100 text-primary-800' :
+                                            'bg-emerald-100 text-emerald-800'
+                                        }`}>
+                                            {user.role === 'super_admin' ? 'Super Admin' : user.role}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        {user.role !== 'admin' && (
-                                            <div className="flex items-center justify-end gap-3">
+                                        <div className="flex items-center justify-end gap-3">
+                                            {user.role !== 'super_admin' && (
                                                 <button
                                                     onClick={() => handlePromote(user.id)}
-                                                    className="text-primary-600 hover:text-primary-800 flex items-center justify-end"
+                                                    className="text-primary-600 hover:text-primary-800 flex items-center"
+                                                    title={user.role === 'member' ? 'Promote to Admin' : 'Promote to Super Admin'}
                                                 >
                                                     <Shield className="w-4 h-4 mr-1" />
                                                     Promote
                                                 </button>
+                                            )}
+                                            {user.role !== 'member' && (
                                                 <button
-                                                    onClick={() => handleRevoke(user.id)}
-                                                    className="text-danger-500 hover:text-danger-700 flex items-center justify-end w-full"
+                                                    onClick={() => handleDemote(user.id)}
+                                                    className="text-amber-600 hover:text-amber-800 flex items-center"
+                                                    title={user.role === 'super_admin' ? 'Demote to Admin' : 'Demote to Member'}
                                                 >
-                                                    <X className="w-4 h-4 mr-1" />
-                                                    Revoke Access
+                                                    <ShieldOff className="w-4 h-4 mr-1" />
+                                                    Demote
                                                 </button>
-                                            </div>
-                                        )}
+                                            )}
+                                            <button
+                                                onClick={() => handleRevoke(user.id)}
+                                                className="text-danger-500 hover:text-danger-700 flex items-center"
+                                                title="Revoke Access"
+                                            >
+                                                <X className="w-4 h-4 mr-1" />
+                                                Revoke
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

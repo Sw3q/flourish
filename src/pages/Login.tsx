@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2, ArrowRight, HeartHandshake } from 'lucide-react';
 import { CONFIG } from '../config';
+import { useFloors } from '../hooks/useFloors';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -16,7 +17,15 @@ export default function Login() {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [floorId, setFloorId] = useState('');
     const [loading, setLoading] = useState(false);
+    const floors = useFloors();
+
+    useEffect(() => {
+        if (!isLogin && floors.length > 0 && !floorId) {
+            setFloorId(floors[0].id);
+        }
+    }, [isLogin, floors, floorId]);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -41,6 +50,9 @@ export default function Login() {
                     password,
                     options: {
                         emailRedirectTo: `${window.location.origin}/pending`,
+                        data: {
+                            floor_id: floorId
+                        }
                     },
                 });
                 if (error) throw error;
@@ -105,6 +117,23 @@ export default function Login() {
                                 placeholder="••••••••"
                             />
                         </div>
+
+                        {!isLogin && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">
+                                    Base Community Floor
+                                </label>
+                                <select
+                                    value={floorId}
+                                    onChange={(e) => setFloorId(e.target.value)}
+                                    className="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block p-3 pr-8 shadow-sm transition-all focus:ring-2 focus:ring-opacity-20 outline-none"
+                                >
+                                    {floors.map(floor => (
+                                        <option key={floor.id} value={floor.id}>{floor.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {error && (
                             <div className="p-3 bg-danger-400/10 text-danger-400 text-sm rounded-xl border border-danger-400/20">

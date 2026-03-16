@@ -1,10 +1,12 @@
 import { Users, UserPlus, BadgeDollarSign, RotateCcw, Link2, Check } from 'lucide-react';
 import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useHypercerts } from '../hooks/useHypercerts';
 
 export default function Dashboard() {
+    const { floorId: floorIdParam } = useParams();
     const {
         currentUser,
         members,
@@ -18,7 +20,10 @@ export default function Dashboard() {
         delegateVoteForProposal,
         getVotingPower,
         refreshData,
-    } = useDashboardData();
+        floorName,
+    } = useDashboardData(floorIdParam);
+
+    const isCurrentFloor = !floorIdParam || floorIdParam === (currentUser as any)?.floor_id;
     const { linkAtProtoIdentity, resolveHandle, error: hypercertError } = useHypercerts();
     const [handle, setHandle] = useState(currentUser?.atproto_handle || '');
     const [appPassword, setAppPassword] = useState(currentUser?.atproto_app_password || '');
@@ -58,13 +63,28 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+            {!isCurrentFloor && (
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex items-center text-amber-800 text-sm font-medium">
+                        <Users className="w-5 h-5 mr-3 text-amber-500" />
+                        You are viewing a different floor. Voting and admin actions are disabled.
+                    </div>
+                    <Link
+                        to={`/floor/${(currentUser as any)?.floor_id}`}
+                        className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+                    >
+                        <BadgeDollarSign className="w-4 h-4" />
+                        Go to My Floor
+                    </Link>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        Welcome back,
+                        {floorName || 'Floor Dashboard'}
                     </h1>
                     <p className="text-xl text-primary-600 font-medium mt-1">
-                        {currentUser?.email.split('@')[0]}
+                        Welcome back, {currentUser?.email.split('@')[0]}
                     </p>
                 </div>
 
@@ -104,11 +124,13 @@ export default function Dashboard() {
                     {currentUser && (
                         <ProposalsList
                             currentUserId={currentUser.id}
+                            currentFloorId={floorIdParam || (currentUser as any).floor_id}
                             members={members}
                             proposalDelegations={proposalDelegations}
                             globalDelegatedTo={currentUser.delegated_to}
-                            onDelegateProposal={delegateVoteForProposal}
+                            onDelegateProposal={isCurrentFloor ? delegateVoteForProposal : async () => false}
                             getVotingPower={getVotingPower}
+                            disabled={!isCurrentFloor}
                         />
                     )}
                 </div>
@@ -132,12 +154,14 @@ export default function Dashboard() {
                                     <div className="text-slate-900 font-medium truncate">
                                         {members.find(m => m.id === currentUser.delegated_to)?.email.split('@')[0] || 'Unknown User'}
                                     </div>
-                                    <button
-                                        onClick={() => handleDelegate(null)}
-                                        className="mt-3 text-xs font-medium text-red-500 hover:text-red-600 underline"
-                                    >
-                                        Revoke Global Delegation
-                                    </button>
+                                    {isCurrentFloor && (
+                                        <button
+                                            onClick={() => handleDelegate(null)}
+                                            className="mt-3 text-xs font-medium text-red-500 hover:text-red-600 underline"
+                                        >
+                                            Revoke Global Delegation
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -151,14 +175,17 @@ export default function Dashboard() {
                                 <button
                                     key={member.id}
                                     onClick={() => handleDelegate(member.id)}
-                                    className="w-full text-left p-3 bg-white hover:bg-white/80 transition-colors rounded-xl border border-primary-100/50 shadow-sm group flex justify-between items-center"
+                                    disabled={!isCurrentFloor}
+                                    className="w-full text-left p-3 bg-white hover:bg-white/80 transition-colors rounded-xl border border-primary-100/50 shadow-sm group flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <span className="text-sm font-medium text-slate-700 group-hover:text-primary-700 truncate mr-2">
                                         {member.email.split('@')[0]}
                                     </span>
-                                    <span className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                                        Delegate All
-                                    </span>
+                                    {isCurrentFloor && (
+                                        <span className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                                            Delegate All
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>

@@ -4,6 +4,11 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Login from './Login';
 import { supabase } from '../lib/supabase';
 
+// Mock useFloors
+vi.mock('../hooks/useFloors', () => ({
+    useFloors: () => [{ id: 'floor1', name: 'Test Floor' }]
+}));
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {

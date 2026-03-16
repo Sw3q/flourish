@@ -3,27 +3,34 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useProposals } from './useProposals';
 import { supabase } from '../lib/supabase';
 
+const createBulletproofMock = (data: any = [], count: number = 0) => {
+    const chain: any = {
+        data, count, error: null,
+        then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
+        catch: (cb: any) => Promise.resolve(cb(null)),
+        finally: (cb: any) => Promise.resolve(cb()),
+    };
+    return new Proxy(chain, {
+        get(target, prop) {
+            if (prop in target) return target[prop];
+            if (typeof prop === 'string') return () => new Proxy(target, this);
+            return target[prop];
+        }
+    });
+};
+
 // Safe default factory — returns empty data for every table
-const safeMock = () => ({
-    select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: [] }),
-        eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null }),
-            eq: vi.fn().mockResolvedValue({ data: [], count: 0 }),
-            then: (cb: any) => Promise.resolve(cb({ data: [], count: 0, error: null })),
+const safeMock = () => {
+    return {
+        select: () => createBulletproofMock(),
+        insert: vi.fn().mockReturnValue({
+            select: () => createBulletproofMock()
         }),
-        single: vi.fn().mockResolvedValue({ data: null }),
-        in: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: [] }),
-        }),
-    }),
-    insert: vi.fn().mockReturnValue({
-        select: () => ({ single: vi.fn().mockResolvedValue({ data: null, error: null }) })
-    }),
-    update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
-    upsert: vi.fn().mockResolvedValue({ error: null }),
-    delete: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }) }),
-});
+        update: vi.fn().mockReturnValue(createBulletproofMock()),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockReturnValue(createBulletproofMock()),
+    };
+};
 
 describe('useProposals Hook', () => {
     beforeEach(() => {
@@ -32,7 +39,7 @@ describe('useProposals Hook', () => {
     });
 
     it('initializes with empty proposals', async () => {
-        const { result } = renderHook(() => useProposals('user1'));
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
         await waitFor(() => expect(result.current.proposals).toEqual([]));
     });
 
@@ -44,15 +51,15 @@ describe('useProposals Hook', () => {
             categories: { name: 'Furniture', color_theme: 'blue' }, profiles: { email: 'u@t.com' }
         };
         const mockInsert = vi.fn().mockReturnValue({
-            select: () => ({ single: vi.fn().mockResolvedValue({ data: fakeProposal, error: null }) })
+            select: () => createBulletproofMock(fakeProposal)
         });
         (supabase.from as any).mockImplementation((table: string) =>
             table === 'proposals'
-                ? { ...safeMock(), insert: mockInsert, select: () => ({ order: vi.fn().mockResolvedValue({ data: [] }) }) }
+                ? { ...safeMock(), insert: mockInsert, select: () => createBulletproofMock([]) }
                 : safeMock()
         );
 
-        const { result } = renderHook(() => useProposals('user1'));
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
         await waitFor(() => expect(result.current.proposals).toHaveLength(0));
 
         await act(async () => {
@@ -73,11 +80,11 @@ describe('useProposals Hook', () => {
 
         (supabase.from as any).mockImplementation((table: string) =>
             table === 'proposals'
-                ? { ...safeMock(), delete: mockDelete, select: () => ({ order: vi.fn().mockResolvedValue({ data: [proposal] }) }) }
+                ? { ...safeMock(), delete: mockDelete, select: () => createBulletproofMock([proposal]) }
                 : safeMock()
         );
 
-        const { result } = renderHook(() => useProposals('user1'));
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
         await waitFor(() => expect(result.current.proposals).toHaveLength(1));
 
         await act(async () => { await result.current.deleteProposal('p-del'); });
@@ -99,26 +106,28 @@ describe('useProposals Hook', () => {
             ? [{ proposal_id: 'prop1', voter_id: 'user1', vote: existingVote }]
             : [];
 
-        const votesSelectResult = {
-            data: currentUserVote,
-            error: null,
-            // Allow top-level await: select('*') is directly thenable
-            then: (cb: any) => Promise.resolve(cb({ data: currentUserVote, error: null })),
-            eq: vi.fn().mockReturnValue({
-                then: (cb: any) => Promise.resolve(cb({ data: currentUserVote, error: null })),
-            }),
-        };
-
+        let isDeleted = false;
         (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'proposals') return createBulletproofMock([{ id: 'prop1', status: 'active' }]);
+            if (table === 'profiles') return createBulletproofMock([{ id: 'user1', delegated_to: null, count: 1 }]);
+            if (table === 'categories') return createBulletproofMock([]);
+            if (table === 'proposal_delegations') return createBulletproofMock([]);
             if (table === 'votes') return {
                 insert: mockInsert,
                 update: mockUpdate,
-                delete: mockDelete,
-                select: vi.fn().mockReturnValue(votesSelectResult),
+                delete: (...args: any[]) => {
+                    isDeleted = true;
+                    return mockDelete(...args);
+                },
+                select: () => {
+                    // if it's been deleted, return empty array to simulate removal during refetch
+                    if (isDeleted) return createBulletproofMock([]); 
+                    return createBulletproofMock(currentUserVote);
+                },
             };
             return safeMock();
         });
-        const { result } = renderHook(() => useProposals('user1'));
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
         return { result, mockInsert, mockUpdate, mockDelete };
         };
 
@@ -160,13 +169,13 @@ describe('useProposals Hook', () => {
                 if (table === 'votes') return {
                     insert: mockInsert,
                     // fetchData re-reads votes — confirm no vote exists in DB
-                    select: () => ({ eq: vi.fn().mockResolvedValue({ data: [] }) }),
+                    select: () => createBulletproofMock([]),
                 };
                 return safeMock();
             });
 
-            const { result } = renderHook(() => useProposals('user1'));
-            await waitFor(() => expect(result.current.userVotes).toEqual({}));
+            const { result } = renderHook(() => useProposals('user1', 'floor1'));
+        await waitFor(() => expect(result.current.userVotes).toEqual({}));
 
             let success: any;
             await act(async () => { success = await result.current.castVote('prop1', true); });
@@ -186,7 +195,7 @@ describe('useProposals Hook', () => {
                 return m;
             });
 
-            const { result } = renderHook(() => useProposals('user1'));
+            const { result } = renderHook(() => useProposals('user1', 'floor1'));
             await waitFor(() => expect(result.current.proposals).toEqual([]));
             await act(async () => { await result.current.castVote('prop1', true); });
 
@@ -216,22 +225,6 @@ describe('useProposals Hook', () => {
             { user_id: 'voter4', proposal_id: 'prop-weighted', delegated_to: 'voter2' }
         ];
 
-        const createBulletproofMock = (data: any = [], count: number = 0) => {
-            const chain: any = {
-                data, count, error: null,
-                then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
-                catch: (cb: any) => Promise.resolve(cb(null)),
-                finally: (cb: any) => Promise.resolve(cb()),
-            };
-            return new Proxy(chain, {
-                get(target, prop) {
-                    if (prop in target) return target[prop];
-                    if (typeof prop === 'string') return () => new Proxy(target, this);
-                    return target[prop];
-                }
-            });
-        };
-
         (supabase.from as any).mockImplementation((table: string) => {
             if (table === 'proposals') return createBulletproofMock([activeProposal]);
             if (table === 'categories') return createBulletproofMock([]);
@@ -253,7 +246,7 @@ describe('useProposals Hook', () => {
             return createBulletproofMock([]);
         });
 
-        const { result } = renderHook(() => useProposals('user1'));
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
 
         await waitFor(() => {
             const votes = result.current.proposalVotes['prop-weighted'];

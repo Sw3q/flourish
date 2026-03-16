@@ -23,7 +23,7 @@ export type Proposal = {
     hypercert_uri?: string;
 };
 
-export function useProposals(currentUserId: string) {
+export function useProposals(currentUserId: string, currentFloorId: string | null) {
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [userVotes, setUserVotes] = useState<Record<string, boolean>>({});
@@ -32,12 +32,15 @@ export function useProposals(currentUserId: string) {
     const [totalApprovedUsers, setTotalApprovedUsers] = useState(0);
 
     const fetchData = async () => {
-        const { data: cats } = await supabase.from('categories').select('*');
+        if (!currentFloorId) return;
+
+        const { data: cats } = await supabase.from('categories').select('*').eq('floor_id', currentFloorId);
         if (cats) setCategories(cats);
 
         const { data: props } = await supabase
             .from('proposals')
             .select('*, categories (name, color_theme), profiles:creator_id (email)')
+            .eq('floor_id', currentFloorId)
             .order('created_at', { ascending: false });
         if (props) setProposals(props as unknown as Proposal[]);
 
@@ -76,6 +79,7 @@ export function useProposals(currentUserId: string) {
         const { count } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
+            .eq('floor_id', currentFloorId)
             .eq('is_approved', true);
         setTotalApprovedUsers(count || 0);
     };
@@ -139,12 +143,18 @@ export function useProposals(currentUserId: string) {
     };
 
     const createProposal = async (title: string, description: string, amount: number, categoryId: string, durationDays: number) => {
+        if (!currentFloorId) return false;
+        
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + durationDays);
 
         const { data, error } = await supabase
             .from('proposals')
-            .insert([{ title, description, amount, category_id: categoryId, creator_id: currentUserId, expires_at: expiresAt.toISOString() }])
+            .insert([{ 
+                title, description, amount, category_id: categoryId, 
+                creator_id: currentUserId, expires_at: expiresAt.toISOString(),
+                floor_id: currentFloorId
+            }])
             .select('*, categories (name, color_theme), profiles:creator_id (email)')
             .single();
 
@@ -219,8 +229,8 @@ export function useProposals(currentUserId: string) {
     };
 
     useEffect(() => {
-        if (currentUserId) fetchData();
-    }, [currentUserId]);
+        if (currentUserId && currentFloorId) fetchData();
+    }, [currentUserId, currentFloorId]);
 
     return { 
         proposals, 

@@ -12,10 +12,11 @@ export type Profile = {
     atproto_app_password?: string;
 };
 
-export function useDashboardData() {
+export function useDashboardData(floorIdOverride?: string | null) {
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
     const [members, setMembers] = useState<Profile[]>([]);
     const [votingPower, setVotingPower] = useState<number>(1);
+    const [floorName, setFloorName] = useState<string>('');
     const [fundBalance, setFundBalance] = useState<number>(0);
     const [monthlyBurnRate, setMonthlyBurnRate] = useState<number>(0);
     const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ export function useDashboardData() {
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [floorIdOverride]);
 
     const fetchDashboardData = async () => {
         let user;
@@ -38,7 +39,7 @@ export function useDashboardData() {
         if (!user) return;
 
         // Fetch current user profile
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
@@ -47,27 +48,49 @@ export function useDashboardData() {
         if (profile) {
             setCurrentUser(profile as Profile);
         } else if (CONFIG.BYPASS_AUTH) {
-            setCurrentUser({
+            const bypassUser = {
                 id: user.id,
                 email: user.email!,
-                role: 'admin',
-                delegated_to: null
-            });
+                role: 'super_admin',
+                floor_id: '00000000-0000-0000-0000-000000000000',
+                delegated_to: null,
+                is_approved: true
+            };
+            setCurrentUser(bypassUser);
+            profile = { floor_id: '00000000-0000-0000-0000-000000000000' } as any;
         }
 
-        // Fetch all approved members for delegation list
+        const activeFloorId = floorIdOverride || profile?.floor_id;
+
+        if (!activeFloorId) {
+             setLoading(false);
+             return;
+        }
+
+        // Fetch all approved members for delegation list on THIS floor
         const { data: allMembers } = await supabase
             .from('profiles')
             .select('*')
             .eq('is_approved', true)
+            .eq('floor_id', activeFloorId)
             .neq('id', user.id);
 
         if (allMembers) setMembers(allMembers as Profile[]);
+
+        // Fetch floor name
+        const { data: floorData } = await supabase
+            .from('floors')
+            .select('name')
+            .eq('id', activeFloorId)
+            .single();
+        
+        if (floorData) setFloorName(floorData.name);
 
         // Calculate global voting power (1 + direct delegations to me)
         const { count } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
+            .eq('floor_id', activeFloorId)
             .eq('delegated_to', user.id);
 
         setVotingPower(1 + (count || 0));
@@ -84,8 +107,8 @@ export function useDashboardData() {
             setProposalDelegations(map);
         }
 
-        // Fetch total pot balance
-        const { data: txs } = await supabase.from('transactions').select('amount, type');
+        // Fetch total pot balance for this floor
+        const { data: txs } = await supabase.from('transactions').select('amount, type').eq('floor_id', activeFloorId);
         if (txs) {
             const balance = txs.reduce((acc, curr) => {
                 return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
@@ -93,10 +116,11 @@ export function useDashboardData() {
             setFundBalance(balance);
         }
 
-        // Fetch active recurring expenses for monthly burn rate
+        // Fetch active recurring expenses for monthly burn rate on this floor
         const { data: expenses } = await supabase
             .from('recurring_expenses')
             .select('amount')
+            .eq('floor_id', activeFloorId)
             .eq('is_active', true);
 
         if (expenses) {
@@ -259,6 +283,7 @@ export function useDashboardData() {
         monthlyBurnRate,
         loading,
         proposalDelegations,
+        floorName,
         updateAtProtoCredentials,
         delegateVote,
         delegateVoteForProposal,

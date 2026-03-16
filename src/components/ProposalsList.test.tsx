@@ -35,6 +35,7 @@ const mockProposal2 = {
 
 const defaultProps = {
     currentUserId: 'user-1',
+    currentFloorId: 'floor-1',
     members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: null, role: 'member' }],
     proposalDelegations: {},
     globalDelegatedTo: null,
