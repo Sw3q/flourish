@@ -197,7 +197,7 @@ export default function Dashboard() {
                             Linked Identities
                         </h2>
                         <p className="text-slate-500 text-sm mb-6">
-                            Connect your ATProto (Bluesky) identity to receive Hypercerts for your impact.
+                            Connect your ATProto identity to receive Hypercerts for your impact.
                         </p>
 
                         {currentUser?.atproto_handle && currentUser?.atproto_app_password ? (
@@ -213,7 +213,7 @@ export default function Dashboard() {
                                         <Check className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setHandle(currentUser.atproto_handle || '');
                                         setAppPassword(currentUser.atproto_app_password || '');
