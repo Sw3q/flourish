@@ -53,3 +53,12 @@ export type RecurringExpense = {
     created_at: string;
     categories?: { name: string; color_theme: string };
 };
+
+export type Transaction = {
+    id: string;
+    amount: number;
+    type: 'deposit' | 'withdrawal';
+    description: string;
+    floor_id: string;
+    created_at: string;
+};

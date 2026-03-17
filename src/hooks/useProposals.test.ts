@@ -9,6 +9,7 @@ const createBulletproofMock = (data: any = [], count: number = 0) => {
         then: (cb: any) => Promise.resolve(cb({ data, count, error: null })),
         catch: (cb: any) => Promise.resolve(cb(null)),
         finally: (cb: any) => Promise.resolve(cb()),
+        rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     };
     return new Proxy(chain, {
         get(target, prop) {
@@ -29,6 +30,7 @@ const safeMock = () => {
         update: vi.fn().mockReturnValue(createBulletproofMock()),
         upsert: vi.fn().mockResolvedValue({ error: null }),
         delete: vi.fn().mockReturnValue(createBulletproofMock()),
+        rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     };
 };
 
@@ -253,6 +255,34 @@ describe('useProposals Hook', () => {
             expect(votes).toBeDefined();
             expect(votes?.yes).toBe(2);
             expect(votes?.total).toBe(4);
+        });
+    });
+
+    it('filters out expired active proposals from the state', async () => {
+        const now = new Date();
+        const expiredProp = {
+            id: 'expired', title: 'Old', status: 'active',
+            expires_at: new Date(now.getTime() - 86400000).toISOString(), // 1 day ago
+            created_at: new Date(now.getTime() - 172800000).toISOString(),
+            categories: { name: 'X', color_theme: 'c' }, profiles: { email: 'u@t.com' }
+        };
+        const activeProp = {
+            id: 'active', title: 'New', status: 'active',
+            expires_at: new Date(now.getTime() + 86400000).toISOString(), // 1 day from now
+            created_at: now.toISOString(),
+            categories: { name: 'X', color_theme: 'c' }, profiles: { email: 'u@t.com' }
+        };
+
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'proposals') return createBulletproofMock([expiredProp, activeProp]);
+            return safeMock();
+        });
+
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
+        
+        await waitFor(() => {
+            expect(result.current.proposals).toHaveLength(1);
+            expect(result.current.proposals[0].id).toBe('active');
         });
     });
 });

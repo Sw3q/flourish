@@ -42,7 +42,17 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
             .select('*, categories (name, color_theme), profiles:creator_id (email)')
             .eq('floor_id', currentFloorId)
             .order('created_at', { ascending: false });
-        if (props) setProposals(props as unknown as Proposal[]);
+        
+        // Sync DB (fire and forget)
+        supabase.rpc('evaluate_cleanup').then();
+
+        const now = new Date();
+        const filteredProps = (props || []).filter((p: any) => {
+            if (p.status === 'active' && new Date(p.expires_at) < now) return false;
+            return true;
+        });
+
+        if (props) setProposals(filteredProps as unknown as Proposal[]);
 
         // Participation tracking: Direct votes + Delegated participation
         const { data: allVotes } = await supabase.from('votes').select('*');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Trash2, Users, ExternalLink, Award, ChevronLeft, ChevronRight, ListChecks } from 'lucide-react';
+import { Plus, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Users, ExternalLink, Award, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useProposals, type Proposal } from '../hooks/useProposals';
 import HypercertIssuanceModal from './HypercertIssuanceModal';
 import type { Profile } from '../hooks/useDashboardData';
@@ -65,7 +65,7 @@ function ProposalTimer({ expiresAt, createdAt }: { expiresAt: string; createdAt:
     }, [compute]);
 
     return (
-        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border ${colorClass} ${bgClass}`}>
+        <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${colorClass} ${bgClass}`}>
             <Clock className="w-3 h-3" />
             {timeLeft}
         </span>
@@ -107,25 +107,25 @@ function ConvictionStatus({ quorumReachedAt }: { quorumReachedAt: string | null 
     }, [quorumReachedAt]);
 
     if (!quorumReachedAt) return (
-        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-black uppercase tracking-widest border border-slate-100 bg-slate-50 px-3 py-1.5 rounded-full">
             <Users className="w-3 h-3" />
-            Waiting for Quorum...
+            Waiting for Quorum
         </div>
     );
 
     return (
-        <div className="space-y-1.5 w-full">
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-primary-600">
-                <span>Conviction Building</span>
+        <div className="space-y-2 w-full pt-4 border-t border-slate-50">
+            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-primary-600">
+                <span>Force of Conviction</span>
                 <span>{progress}%</span>
             </div>
-            <div className="w-full h-1.5 bg-primary-100 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-primary-100 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-primary-500 transition-all duration-1000 ease-linear"
+                    className="h-full bg-primary-600 transition-all duration-1000 ease-linear rounded-full"
                     style={{ width: `${progress}%` }}
                 ></div>
             </div>
-            <div className="text-[10px] text-primary-500 font-medium">{timeLeft}</div>
+            <div className="text-[9px] text-primary-500 font-bold uppercase tracking-widest">{timeLeft}</div>
         </div>
     );
 }
@@ -157,11 +157,9 @@ function DelegationPills({
     if (members.length === 0) return null;
 
     return (
-        <div className="mt-3 pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-slate-400 font-medium mr-1 flex items-center gap-1">
-                    <Users className="w-3 h-3" /> Delegate:
-                </span>
+        <div className="mt-6 pt-6 border-t border-slate-50">
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Delegate Power:</span>
                 {members.map(member => {
                     const name = member.email.split('@')[0];
                     const isActive = activeDelegateId === member.id;
@@ -169,22 +167,15 @@ function DelegationPills({
                         <button
                             key={member.id}
                             onClick={() => handleClick(member.id)}
-                            title={isActive ? `Remove delegation from ${name}` : `Delegate this vote to ${name}`}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${isActive
-                                ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-primary-300 hover:text-primary-700 hover:bg-primary-50'
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight transition-all border ${isActive
+                                ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-600/20'
+                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary-400 hover:text-primary-600 hover:bg-white'
                                 }`}
                         >
-                            {isActive && <span className="mr-1">✓</span>}
                             {name}
                         </button>
                     );
                 })}
-                {activeDelegateId && (
-                    <span className="text-xs text-primary-500 font-medium ml-1">
-                        — voting via {members.find(m => m.id === activeDelegateId)?.email.split('@')[0]}
-                    </span>
-                )}
             </div>
         </div>
     );
@@ -218,14 +209,13 @@ function VoteButton({
         <button
             onClick={() => !disabled && onVote(proposalId, isYes)}
             disabled={disabled}
-            title={isActive ? `Click to retract your ${isYes ? 'Yes' : 'No'} vote` : `Vote ${isYes ? 'Yes' : 'No'}`}
-            className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${isActive
-                ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-offset-1 ring-green-400'
-                : 'bg-slate-50 text-slate-600 hover:bg-green-100 hover:text-green-700 border border-slate-100'
+            className={`flex-1 flex items-center justify-center py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${isActive
+                ? 'bg-primary-600 text-white shadow-xl shadow-primary-600/30'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-            <ThumbsUp className={`w-4 h-4 mr-2 ${isActive ? 'animate-bounce' : ''}`} />
-            Yes ({power ?? '...'})
+            {isYes ? <ThumbsUp className="w-4 h-4 mr-2" /> : <ThumbsDown className="w-4 h-4 mr-2" />}
+            {isYes ? 'Yes' : 'No'} ({power ?? '..'})
         </button>
     );
 }
@@ -256,21 +246,17 @@ export default function ProposalsList({
         updateProposalHypercert,
     } = useProposals(currentUserId, currentFloorId);
 
-    // New Proposal Form State
     const [isCreating, setIsCreating] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newDesc, setNewDesc] = useState('');
     const [newAmount, setNewAmount] = useState('');
-    const [newDurationDays, setNewDurationDays] = useState('7'); // Default 7 days
+    const [newDurationDays, setNewDurationDays] = useState('7');
     const [newCatId, setNewCatId] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
-
-    // Hypercert issuance state
     const [issuingProposal, setIssuingProposal] = useState<Proposal | null>(null);
 
-    // Tinder-style & Tabs state
     const [activeTab, setActiveTab] = useState<'to-vote' | 'my-votes'>('to-vote');
     const [activeIndex, setActiveIndex] = useState(0);
     const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null);
@@ -303,13 +289,11 @@ export default function ProposalsList({
         setDeletingId(null);
     };
 
-    // Filter Active Proposals into Unvoted vs Voted
     const activeProposals = proposals.filter(p => p.status === 'active');
     const unvotedProposals = activeProposals.filter(p => userVotes[p.id] === undefined);
     const votedProposals = activeProposals.filter(p => userVotes[p.id] !== undefined);
     const pastProposals = proposals.filter(p => p.status !== 'active');
 
-    // Clamp index for the To Vote tab
     const clampedIndex = Math.min(activeIndex, Math.max(0, unvotedProposals.length - 1));
 
     const navigate = useCallback((dir: 'left' | 'right') => {
@@ -325,7 +309,6 @@ export default function ProposalsList({
         }
     }, [activeTab, clampedIndex, unvotedProposals.length]);
 
-    // Keyboard navigation
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (activeTab === 'to-vote') {
@@ -339,22 +322,16 @@ export default function ProposalsList({
 
     const handleVoteWithSwipe = async (proposalId: string, isYes: boolean) => {
         if (activeTab === 'to-vote') {
-            // Trigger swipe animation in the direction of the vote (Right for Yes, Left for No)
             setSlideDir(isYes ? 'right' : 'left');
-            // Wait for animation briefly, then cast vote
             setTimeout(async () => {
                 await castVote(proposalId, isYes);
                 setSlideDir(null);
-                // Keep activeIndex the same, because unvotedProposals will shrink by 1,
-                // making the "next" proposal automatically slide into the `activeIndex` slot.
                 setActiveIndex(Math.max(0, Math.min(clampedIndex, unvotedProposals.length - 2)));
             }, 300);
         } else {
-            // Normal vote modification in "My Votes" tab without sliding away
             await castVote(proposalId, isYes);
         }
     };
-
 
     const renderProposalCard = (proposal: Proposal, isTinderStyle: boolean) => {
         const catColor = proposal.categories?.color_theme || 'slate';
@@ -363,7 +340,6 @@ export default function ProposalsList({
         const progress = Math.min(100, Math.round((votes.yes / Math.max(threshold, 1)) * 100)) || 0;
         const isCreator = proposal.creator_id === currentUserId;
 
-        // Apply slide animation classes only if it's the specific tinder card
         const transitionClass = isTinderStyle
             ? (slideDir === 'right' ? 'translate-x-full opacity-0' : slideDir === 'left' ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100')
             : 'opacity-100';
@@ -371,49 +347,53 @@ export default function ProposalsList({
         return (
             <div
                 key={proposal.id}
-                data-testid="proposal-card"
-                className={`w-full bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-all duration-300 relative overflow-hidden ${transitionClass} ${isTinderStyle ? 'max-w-2xl mx-auto' : ''}`}
+                className={`w-full bg-white border border-slate-200 p-8 md:p-10 rounded-[2.5rem] flex flex-col group hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all duration-700 relative overflow-hidden ${transitionClass} ${isTinderStyle ? 'max-w-3xl mx-auto shadow-2xl' : ''}`}
             >
-                {/* Category color progress bar */}
-                <div className={`absolute top-0 left-0 w-full h-1 bg-${catColor}-500/20`}></div>
-                <div className={`absolute top-0 left-0 h-1 bg-${catColor}-500 transition-all duration-1000 ease-out`} style={{ width: `${progress}%` }}></div>
-
-                {/* Header row: category badge + amount + delete */}
-                <div className="flex justify-between items-start mb-3 mt-2">
-                    <span className={`px-2.5 py-1 bg-${catColor}-50 text-${catColor}-700 text-xs font-bold uppercase tracking-wider rounded-lg`}>
-                        {proposal.categories?.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-slate-900">${proposal.amount}</span>
-                        {isCreator && (
-                            <button
-                                onClick={() => handleDelete(proposal.id)}
-                                disabled={deletingId === proposal.id}
-                                title="Delete your proposal"
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        )}
+                {/* Visual Accent */}
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-${catColor}-500/10 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
+                
+                {/* Header Section */}
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                    <div className="flex flex-col gap-2">
+                        <span className={`w-fit px-3 py-1 bg-${catColor}-50 text-${catColor}-700 text-[10px] font-black uppercase tracking-widest rounded-full`}>
+                            {proposal.categories?.name}
+                        </span>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">
+                            By {proposal.profiles?.email.split('@')[0]}
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="text-3xl font-display font-extrabold text-slate-900">${proposal.amount.toLocaleString()}</div>
+                        <ProposalTimer expiresAt={proposal.expires_at} createdAt={proposal.created_at} />
                     </div>
                 </div>
 
-                <h4 className="text-xl font-bold text-slate-800 mb-2">{proposal.title}</h4>
-                <p className="text-slate-500 text-sm mb-4 flex-1">{proposal.description}</p>
+                {/* Title & Description */}
+                <div className="mb-10 flex-1 relative z-10">
+                    <h4 className="text-3xl font-display font-extrabold text-slate-900 mb-4 tracking-tight leading-tight group-hover:text-primary-700 transition-colors">
+                        {proposal.title}
+                    </h4>
+                    <p className="text-slate-500 font-medium leading-relaxed">
+                        {proposal.description}
+                    </p>
+                </div>
 
-                <div className="mt-auto space-y-3">
-                    {/* Meta row: proposer + timer */}
-                    <div className="flex justify-between items-center text-xs font-medium text-slate-500">
-                        <span>by {proposal.profiles?.email.split('@')[0]}</span>
-                        <ProposalTimer expiresAt={proposal.expires_at} createdAt={proposal.created_at} />
+                {/* Engagement Section */}
+                <div className="space-y-6 relative z-10">
+                    {/* Voting Progress */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-baseline text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                            <span>Quorum Progress</span>
+                            <span>{votes.yes} / {Math.ceil(threshold + 1)} YES</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-slate-900 transition-all duration-700 ease-out rounded-full" style={{ width: `${progress}%` }}></div>
+                        </div>
                     </div>
 
-                    {/* Vote progress */}
-                    <div className="text-xs text-slate-400 font-medium">{progress}% to threshold ({votes.yes}/{Math.ceil(threshold + 1)} yes needed)</div>
-
-                    {/* Vote buttons or Delegation message */}
+                    {/* Interaction Bar */}
                     {!globalDelegatedTo && !proposalDelegations[proposal.id] ? (
-                        <div className="flex gap-3">
+                        <div className="flex gap-4">
                             <VoteButton
                                 proposalId={proposal.id}
                                 isYes={true}
@@ -422,178 +402,188 @@ export default function ProposalsList({
                                 getVotingPower={getVotingPower}
                                 disabled={disabled}
                             />
-                            <button
-                                onClick={() => !disabled && handleVoteWithSwipe(proposal.id, false)}
+                            <VoteButton
+                                proposalId={proposal.id}
+                                isYes={false}
+                                isActive={userVotes[proposal.id] === false}
+                                onVote={handleVoteWithSwipe}
+                                getVotingPower={getVotingPower}
                                 disabled={disabled}
-                                title={userVotes[proposal.id] === false ? 'Click to retract your No vote' : 'Vote No'}
-                                className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-medium transition-colors ${userVotes[proposal.id] === false
-                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 ring-2 ring-offset-1 ring-red-400'
-                                    : 'bg-slate-50 text-slate-600 hover:bg-red-100 hover:text-red-700 border border-slate-100'
-                                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <ThumbsDown className="w-4 h-4 mr-2" />
-                                No
-                            </button>
+                            />
                         </div>
                     ) : (
-                        <div className="text-center py-2 px-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 text-xs font-medium italic">
-                            Voting power delegated
+                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group/delegation">
+                            <div className="flex items-center gap-3">
+                                <ShieldCheck className="w-5 h-5 text-primary-500" />
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest italic">Voting power delegated</span>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover/delegation:translate-x-1 transition-transform" />
                         </div>
                     )}
 
-                    {/* Conviction / Quorum Status */}
-                    <div className="mt-2">
-                        <ConvictionStatus quorumReachedAt={proposal.quorum_reached_at} />
-                    </div>
+                    <ConvictionStatus quorumReachedAt={proposal.quorum_reached_at} />
 
-                    {/* Per-proposal delegation pills */}
                     <DelegationPills
                         proposalId={proposal.id}
                         members={members}
                         proposalDelegations={proposalDelegations}
                         onDelegateProposal={onDelegateProposal}
                     />
+
+                    {isCreator && (
+                        <div className="pt-4 border-t border-slate-50 flex justify-end">
+                            <button
+                                onClick={() => handleDelete(proposal.id)}
+                                disabled={deletingId === proposal.id}
+                                className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors"
+                            >
+                                Withdraw Proposal
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     };
 
-
     const currentTinderProposal = unvotedProposals[clampedIndex];
 
     return (
-        <div className="space-y-8 mt-8">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-slate-900">Proposals</h2>
+        <div className="space-y-12 mt-12 bg-transparent pb-32">
+            
+            {/* Action Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-12">
+                <div>
+                    <h2 className="text-4xl font-display font-extrabold tracking-tight text-slate-900 mb-2">Initiatives.</h2>
+                    <p className="text-slate-500 font-medium italic">Communal requests for the floor's flourishing.</p>
+                </div>
                 <button
                     onClick={() => setIsCreating(!isCreating)}
-                    className="flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-colors shadow-sm"
+                    className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-slate-900 hover:bg-primary-700 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full transition-all shadow-xl shadow-slate-900/10"
                 >
-                    {isCreating ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                    {isCreating ? 'Cancel' : 'New Proposal'}
+                    {isCreating ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    {isCreating ? 'Abandon Draft' : 'Launch New Proposal'}
                 </button>
             </div>
 
-            {/* Toast notification */}
             {showToast && (
-                <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center animate-in slide-in-from-bottom-8 duration-100 z-50">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                        <CheckCircle2 className="w-5 h-5 text-white" />
+                <div className="fixed bottom-12 right-12 bg-slate-900 text-white px-8 py-6 rounded-[2rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-12 duration-500 z-50 border border-white/10">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/20">
+                        <CheckCircle2 className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h4 className="font-bold">Proposal Submitted!</h4>
-                        <p className="text-sm text-slate-300">Wait for the floor to vote.</p>
+                        <h4 className="font-display font-extrabold text-xl tracking-tight">Success.</h4>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Proposal is now live in the directory.</p>
                     </div>
                 </div>
             )}
 
-            {/* New Proposal Form */}
             {isCreating && (
-                <form onSubmit={handleCreateProposal} className="bg-white p-6 rounded-3xl border border-primary-200 shadow-xl shadow-primary-500/10 animate-in slide-in-from-top-4 duration-100">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">Request Communal Funds</h3>
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Title</label>
-                            <input type="text" required value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="e.g. New Espresso Machine" />
+                <form onSubmit={handleCreateProposal} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-2xl animate-in slide-in-from-top-8 duration-500 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-primary-600"></div>
+                    <div className="relative z-10 grid md:grid-cols-2 gap-8 mb-12">
+                        <div className="md:col-span-2">
+                            <h3 className="text-3xl font-display font-extrabold mb-8 tracking-tight">Drafting New Intent.</h3>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Category</label>
-                            <select required value={newCatId} onChange={e => setNewCatId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none">
-                                <option value="" disabled>Select a predefined category...</option>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Intent Title</label>
+                            <input type="text" required value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all" placeholder="e.g. Garden Refurbishment" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Category Domain</label>
+                            <select required value={newCatId} onChange={e => setNewCatId(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all appearance-none cursor-pointer">
+                                <option value="" disabled>Select category...</option>
                                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Description</label>
-                            <textarea required value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={3} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="Why do we need this and where are we buying it from?"></textarea>
+                        <div className="md:col-span-2 space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Context & Rationale</label>
+                            <textarea required value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={4} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-medium text-slate-900 transition-all leading-relaxed" placeholder="Detailed objective for requested funds..."></textarea>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Amount Requested ($)</label>
-                            <input type="number" required min="1" step="0.01" value={newAmount} onChange={e => setNewAmount(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="150.00" />
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Capital Required ($)</label>
+                            <input type="number" required min="1" step="0.01" value={newAmount} onChange={e => setNewAmount(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all" placeholder="00.00" />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">Duration (Days)</label>
-                            <input type="number" required min="3" value={newDurationDays} onChange={e => setNewDurationDays(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" placeholder="7" />
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Voting Window (Days)</label>
+                            <input type="number" required min="3" value={newDurationDays} onChange={e => setNewDurationDays(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all" placeholder="7" />
                         </div>
                     </div>
-                    <button type="submit" disabled={submitting} className="w-full md:w-auto px-6 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50">
-                        {submitting ? 'Submitting...' : 'Submit Proposal to Vote'}
+                    <button type="submit" disabled={submitting} className="w-full md:w-auto px-12 py-5 bg-primary-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full hover:bg-primary-700 transition-all shadow-xl shadow-primary-600/20 disabled:opacity-50">
+                        {submitting ? 'Broadcasting Intent...' : 'Deploy Proposal to Floor'}
                     </button>
                 </form>
             )}
 
-            {/* Active Votes Section — Tabs + Content */}
-            <div>
-                {/* Tabs Top Bar */}
-                <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200 gap-4">
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setActiveTab('to-vote')}
-                            className={`flex items-center gap-2 pb-2 px-1 text-sm font-semibold transition-colors border-b-2 -mb-[9px] ${activeTab === 'to-vote' ? 'text-primary-600 border-primary-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
-                        >
-                            <Clock className="w-4 h-4" />
-                            To Vote
-                            <span className="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px] ml-1">{unvotedProposals.length}</span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('my-votes')}
-                            className={`flex items-center gap-2 pb-2 px-1 text-sm font-semibold transition-colors border-b-2 -mb-[9px] ${activeTab === 'my-votes' ? 'text-primary-600 border-primary-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
-                        >
-                            <ListChecks className="w-4 h-4" />
-                            My Votes
-                            <span className={`py-0.5 px-2 rounded-full text-[10px] ml-1 ${votedProposals.length > 0 ? 'bg-primary-50 text-primary-600' : 'bg-slate-100 text-slate-600'}`}>{votedProposals.length}</span>
-                        </button>
-                    </div>
-
-                    {/* Desktop Counter (only in to-vote tab) */}
-                    {activeTab === 'to-vote' && unvotedProposals.length > 0 && (
-                        <span className="text-sm font-semibold text-slate-400" aria-label="card counter">
-                            {clampedIndex + 1} of {unvotedProposals.length}
-                        </span>
-                    )}
+            {/* Navigation Tabs */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-200 pb-0">
+                <div className="flex gap-12">
+                    <button
+                        onClick={() => setActiveTab('to-vote')}
+                        className={`flex items-center gap-3 pb-6 px-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-[3px] -mb-[3px] ${activeTab === 'to-vote' ? 'text-primary-600 border-primary-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    >
+                        Pending Actions
+                        <span className="bg-slate-100 group-hover:bg-primary-50 text-slate-500 py-1 px-3 rounded-full text-[10px] font-black">{unvotedProposals.length}</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('my-votes')}
+                        className={`flex items-center gap-3 pb-6 px-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-[3px] -mb-[3px] ${activeTab === 'my-votes' ? 'text-primary-600 border-primary-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    >
+                        Personal Record
+                        <span className={`py-1 px-3 rounded-full text-[10px] font-black ${votedProposals.length > 0 ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{votedProposals.length}</span>
+                    </button>
                 </div>
 
-                {/* Tab: To Vote (Swipeable Single Card) */}
+                {activeTab === 'to-vote' && unvotedProposals.length > 0 && (
+                    <span className="pb-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {clampedIndex + 1} of {unvotedProposals.length} Entries
+                    </span>
+                )}
+            </div>
+
+            {/* Content Rendering */}
+            <div>
                 {activeTab === 'to-vote' && (
                     unvotedProposals.length === 0 ? (
-                        <div className="p-12 text-center bg-white/50 border border-slate-200 border-dashed rounded-3xl animate-in fade-in duration-500">
-                            <CheckCircle2 className="w-12 h-12 text-primary-200 mx-auto mb-3" />
-                            <h4 className="text-lg font-bold text-slate-800 mb-1">You're all caught up!</h4>
-                            <p className="text-slate-400 max-w-sm mx-auto">There are no unvoted active proposals at the moment. Check back later or create a new one.</p>
+                        <div className="p-24 text-center bg-white border border-slate-100 rounded-[3rem] animate-in fade-in duration-700 group">
+                            <div className="w-20 h-20 bg-primary-50 text-primary-300 rounded-full flex items-center justify-center mx-auto mb-8 border border-primary-100 group-hover:scale-110 transition-transform duration-700">
+                                <CheckCircle2 className="w-8 h-8" />
+                            </div>
+                            <h4 className="text-3xl font-display font-extrabold text-slate-900 mb-4 tracking-tight">System Refinement Complete.</h4>
+                            <p className="text-slate-400 font-medium italic max-w-sm mx-auto">All active proposals have been evaluated. The directory is clear.</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center gap-4">
-                            {/* Nav + Card row */}
-                            <div className="flex items-center gap-3 w-full max-w-4xl mx-auto">
-                                {/* Prev button */}
+                        <div className="flex flex-col items-center gap-12">
+                            <div className="flex items-center gap-8 w-full max-w-5xl mx-auto">
                                 <button
                                     onClick={() => navigate('left')}
                                     disabled={clampedIndex === 0}
-                                    aria-label="Previous proposal"
-                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                                    className="hidden md:flex flex-shrink-0 w-16 h-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 transition-all disabled:opacity-20 shadow-xl shadow-black/5"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <ChevronLeft className="w-6 h-6" />
                                 </button>
 
-                                {/* The Single Tinder Card */}
-                                <div className="flex-1 w-full overflow-hidden p-2 -m-2 relative">
+                                <div className="flex-1 w-full relative">
                                     {currentTinderProposal && renderProposalCard(currentTinderProposal, true)}
                                 </div>
 
-                                {/* Next button */}
                                 <button
                                     onClick={() => navigate('right')}
                                     disabled={clampedIndex === unvotedProposals.length - 1}
-                                    aria-label="Next proposal"
-                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                                    className="hidden md:flex flex-shrink-0 w-16 h-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 transition-all disabled:opacity-20 shadow-xl shadow-black/5"
                                 >
-                                    <ChevronRight className="w-5 h-5" />
+                                    <ChevronRight className="w-6 h-6" />
                                 </button>
                             </div>
 
-                            {/* Dot pagination */}
+                            {/* Mobile Nav */}
+                            <div className="flex md:hidden gap-6">
+                                <button onClick={() => navigate('left')} disabled={clampedIndex === 0} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronLeft className="w-5 h-5" /></button>
+                                <button onClick={() => navigate('right')} disabled={clampedIndex === unvotedProposals.length - 1} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronRight className="w-5 h-5" /></button>
+                            </div>
+
                             {unvotedProposals.length > 1 && (
-                                <div className="flex items-center gap-1.5 mt-2" aria-label="pagination dots">
+                                <div className="flex items-center gap-2">
                                     {unvotedProposals.map((_, i) => (
                                         <button
                                             key={i}
@@ -602,10 +592,9 @@ export default function ProposalsList({
                                                 setActiveIndex(i);
                                                 setTimeout(() => setSlideDir(null), 100);
                                             }}
-                                            aria-label={`Go to proposal ${i + 1}`}
-                                            className={`rounded-full transition-all duration-300 ${i === clampedIndex
-                                                ? 'w-5 h-2 bg-primary-500'
-                                                : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                                            className={`rounded-full transition-all duration-700 ${i === clampedIndex
+                                                ? 'w-12 h-1.5 bg-primary-600'
+                                                : 'w-1.5 h-1.5 bg-slate-200 hover:bg-slate-300'
                                                 }`}
                                         />
                                     ))}
@@ -615,69 +604,70 @@ export default function ProposalsList({
                     )
                 )}
 
-                {/* Tab: My Votes (Vertical Stack) */}
                 {activeTab === 'my-votes' && (
                     votedProposals.length === 0 ? (
-                        <div className="p-8 text-center text-slate-400 bg-white/50 border border-slate-200 border-dashed rounded-3xl">
-                            You haven't voted on any active proposals yet.
+                        <div className="p-20 text-center text-slate-400 font-medium italic border border-slate-100 border-dashed rounded-[3rem]">
+                            No personal voting record found in currently active proposals.
                         </div>
                     ) : (
-                        <div className="grid md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-8 duration-500">
                             {votedProposals.map(proposal => renderProposalCard(proposal, false))}
                         </div>
                     )
                 )}
             </div>
 
-            {/* Past Proposals */}
+            {/* Historical Records */}
             {pastProposals.length > 0 && (
-                <div className="pt-8 border-t border-slate-200">
-                    <h3 className="text-lg font-semibold text-slate-500 mb-6 flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Resolved Proposals
+                <div className="pt-24 border-t border-slate-200">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-12 flex items-center gap-4">
+                        Historical Archives
+                        <div className="h-[1px] flex-1 bg-slate-100"></div>
                     </h3>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {pastProposals.map(proposal => (
-                            <div key={proposal.id} className="bg-white/50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between opacity-75 hover:opacity-100 transition-opacity">
-                                <div className="flex items-center gap-4">
-                                    {proposal.status === 'passed'
-                                        ? <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><Check className="w-5 h-5" /></div>
-                                        : <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><X className="w-5 h-5" /></div>
-                                    }
-                                    <div>
-                                        <h4 className="font-semibold text-slate-800">{proposal.title}</h4>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500">
-                                                {proposal.status === 'passed' ? '✓ Passed' : '✗ Rejected'} · {new Date(proposal.expires_at).toLocaleDateString()}
-                                            </span>
-                                            {proposal.hypercert_uri ? (
-                                                <a
-                                                    href={`https://psky.app/profile/${proposal.hypercert_uri.split('/')[2]}/post/${proposal.hypercert_uri.split('/')[4]}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-600 text-[10px] font-bold uppercase tracking-tight rounded-md border border-primary-100 hover:bg-primary-100 transition-colors"
-                                                >
-                                                    <ExternalLink className="w-2.5 h-2.5" />
-                                                    Hypercert
-                                                </a>
-                                            ) : (proposal.status === 'passed' && participationMap[proposal.id]) && (
-                                                <button
-                                                    onClick={() => setIssuingProposal(proposal)}
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-50 text-accent-600 text-[10px] font-bold uppercase tracking-tight rounded-md border border-accent-100 hover:bg-accent-100 transition-colors"
-                                                >
-                                                    <Award className="w-2.5 h-2.5" />
-                                                    Issue Hypercert
-                                                </button>
-                                            )}
-                                        </div>
+                            <div key={proposal.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-between group hover:border-primary-100 transition-colors">
+                                <div>
+                                    <div className="flex justify-between items-start mb-6">
+                                        {proposal.status === 'passed'
+                                            ? <div className="px-2 py-1 bg-green-50 text-green-600 text-[8px] font-black uppercase tracking-widest rounded-full border border-green-100">Finalized.Passed</div>
+                                            : <div className="px-2 py-1 bg-red-50 text-red-600 text-[8px] font-black uppercase tracking-widest rounded-full border border-red-100">Finalized.Rejected</div>
+                                        }
+                                        <div className="text-xl font-display font-black text-slate-900">${proposal.amount.toLocaleString()}</div>
                                     </div>
+                                    <h4 className="font-bold text-slate-800 mb-2 truncate group-hover:text-primary-700 transition-colors">{proposal.title}</h4>
+                                    <p className="text-xs text-slate-400 font-medium line-clamp-2 leading-relaxed mb-6">{proposal.description}</p>
                                 </div>
-                                <div className="font-bold text-slate-900">${proposal.amount}</div>
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                                        Exp: {new Date(proposal.expires_at).toLocaleDateString()}
+                                    </span>
+                                    {proposal.hypercert_uri ? (
+                                        <a
+                                            href={`https://psky.app/profile/${proposal.hypercert_uri.split('/')[2]}/post/${proposal.hypercert_uri.split('/')[4]}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-full hover:bg-primary-600 transition-all flex items-center gap-2"
+                                        >
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            Hypercert
+                                        </a>
+                                    ) : (proposal.status === 'passed' && participationMap[proposal.id]) && (
+                                        <button
+                                            onClick={() => setIssuingProposal(proposal)}
+                                            className="px-3 py-1.5 bg-primary-100 text-primary-700 text-[9px] font-black uppercase tracking-widest rounded-full hover:bg-primary-600 hover:text-white transition-all flex items-center gap-2"
+                                        >
+                                            <Award className="w-2.5 h-2.5" />
+                                            Certify
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-            {/* Issuance Modal */}
+
             {issuingProposal && (
                 <HypercertIssuanceModal
                     proposal={issuingProposal}
