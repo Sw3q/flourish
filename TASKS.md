@@ -10,6 +10,9 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
     - [ ] 1. Implement global vs floor-specific voting power configurations for super_admins.
 
 ## Completed Tasks History
+- **Phase 33 (Real Data Integration)**: Connected total balance, active proposals, and 30rd-day activity trends to Supabase data in `TowerDashboard.tsx`.
+- **Phase 32 (Global Sidebar)**: Implemented a persistent, collapsible sidebar in `AuthLayout.tsx` and optimized viewport width.
+- **Phase 31 (Tower Dashboard Redesign)**: Replaced `BuildingView.tsx` with `TowerDashboard.tsx`, added SVG visualizations, and improved layout.
 - **Phase 30 (Proposal Expiration Fix)**: Resolved issue where expired proposals remained active. Implemented `evaluate_cleanup()` RPC and frontend filtering.
 - **Phase 29 (Premium Frontend Refinement)**: Reimagined the interface with "Refined Editorial" aesthetic, Frontier OS themes, Bricolage Grotesque typography, and custom motion.
 - **Phase 28 (Building Dashboard)**: Created data-rich `BuildingView.tsx` with global/floor stats and `useTowerStats.ts`.

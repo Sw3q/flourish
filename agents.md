@@ -12,7 +12,8 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Recurring Expenses**: Admins can define and manage monthly recurring expenses, which are manually processed to deduct from the communal pot, providing transparency to all users on the dashboard.
 *   **Hypercerts (Impact Tracking)**: Impact records can be issued for passed proposals using the AT Protocol. Issuance power is decentralized: any approved member who participated in the proposal (directly or through delegation) can link their identity and issue a Hypercert (`HypercertIssuanceModal.tsx`, `useHypercerts.ts`).
 
-*   **Building Navigation**: The primary entry point is the `BuildingView.tsx` (accessible via `/building`), which features an interactive tower navigation. Individual floor dashboards are accessed via `/floor/:floorId`.
+*   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features an interactive tower navigation and global activity visualizations. Individual floor dashboards are accessed via `/floor/:floorId`.
+*   **Global Sidebar**: A persistent, collapsible navigation sidebar is managed by `AuthLayout.tsx`, allowing for deep-floor access and search across the entire tower.
 *   **Multitenancy**: Data is scoped by `floor_id`. Approved users have read access to all floors for transparency but can only vote or perform admin actions on their primary assigned floor.
 *   **Super Admin Role**: A `super_admin` role exists with global oversight and bypass capabilities for approval checks.
 

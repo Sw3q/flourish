@@ -9,6 +9,9 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 - **Phase 27: Governance Refinement**: Consider global vs floor-specific voting power configurations for super_admins.
 
 ## Completed Plans History
+- **Phase 33 (Real Data Integration)**: Connected dashboard metrics and activity trends to live Supabase data.
+- **Phase 32 (Global Sidebar)**: Implemented collapsible sidebar for persistent navigation and maximized viewport space.
+- **Phase 31 (Tower Dashboard Redesign)**: Replaced legacy building view with the new data-rich `TowerDashboard.tsx`.
 - **Phase 30 (Proposal Expiration Fix)**: Implemented batch-evaluation RPC and client-side filtering for stale proposals.
 - **Phase 29 (Premium Frontend Refinement)**: Re-designed core pages with Bricolage Grotesque typography and Frontier OS aesthetics.
 - **Phase 28 (Building Dashboard)**: Redesigned `BuildingView.tsx` into a data-rich dashboard with `useTowerStats.ts`.
