@@ -1,7 +1,6 @@
 import { useTowerStats } from '../hooks/useTowerStats';
 import { Loader2, TrendingUp, Users, BadgeDollarSign, Building2, Activity } from 'lucide-react';
 import { FloorTreasuryChart, ActivityTrendChart } from '../components/Visualizations';
-import { cn } from '../lib/utils';
 
 export default function TowerDashboard() {
     const {
@@ -10,7 +9,6 @@ export default function TowerDashboard() {
         totalMembers,
         activityTrend,
         governanceIntensity,
-        operationalState,
         loading
     } = useTowerStats();
 
