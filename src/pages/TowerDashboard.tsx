@@ -4,14 +4,14 @@ import { FloorTreasuryChart, ActivityTrendChart } from '../components/Visualizat
 import { cn } from '../lib/utils';
 
 export default function TowerDashboard() {
-    const { 
-        floors, 
-        totalBalance, 
-        totalMembers, 
-        activityTrend, 
-        governanceIntensity, 
-        operationalState, 
-        loading 
+    const {
+        floors,
+        totalBalance,
+        totalMembers,
+        activityTrend,
+        governanceIntensity,
+        operationalState,
+        loading
     } = useTowerStats();
 
     if (loading) {
@@ -30,36 +30,18 @@ export default function TowerDashboard() {
     return (
         <div className="w-full h-full space-y-12 animate-in fade-in duration-700">
             {/* Expanded Header */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-200 pb-12">
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-200 pb-8">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-[2px] bg-primary-600"></div>
                         <span className="text-primary-600 font-black tracking-[0.2em] uppercase text-[10px]">Tower Status Overview</span>
-                    </div>
-                    <h1 className="text-6xl md:text-8xl font-display font-extrabold tracking-tight text-slate-900 leading-none">
-                        Frontier <span className="text-primary-600">Verticality.</span>
-                    </h1>
-                </div>
-                <div className="flex items-center gap-6 pb-2">
-                    <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Operational State</p>
-                        <div className="flex items-center gap-2 justify-end">
-                            <div className={cn(
-                                "w-2.5 h-2.5 rounded-full animate-pulse",
-                                operationalState === 'Nominal' ? "bg-green-500" : 
-                                operationalState === 'Quiet' ? "bg-blue-400" : "bg-amber-500"
-                            )}></div>
-                            <span className="text-lg font-display font-black text-slate-900 uppercase tracking-tighter">
-                                {operationalState}
-                            </span>
-                        </div>
                     </div>
                 </div>
             </header>
 
             {/* Dashboard Layout: Stats & Metrics */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-                
+
                 {/* Primary Balance Metric - Expanded */}
                 <div className="xl:col-span-8 bg-white border border-slate-200 p-10 rounded-[3rem] hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.08)] transition-all duration-700">
                     <div className="flex justify-between items-start mb-16">
@@ -74,7 +56,7 @@ export default function TowerDashboard() {
                             <BadgeDollarSign className="w-12 h-12 text-primary-600" />
                         </div>
                     </div>
-                    
+
                     <div className="space-y-8">
                         <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 pb-4">
                             <span>Global Treasury Distribution per Floor</span>
