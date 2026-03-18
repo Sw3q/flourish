@@ -239,7 +239,7 @@ export default function ProposalsList({
     disabled = false,
     hideHeader = false,
     isCreatingOverride = false,
-} : ProposalsListProps) {
+}: ProposalsListProps) {
     const {
         proposals,
         categories,
@@ -396,7 +396,7 @@ export default function ProposalsList({
             >
                 {/* Visual Accent */}
                 <div className={`absolute top-0 right-0 w-32 h-32 bg-${catColor}-500/10 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
-                
+
                 {isEditing ? (
                     <form onSubmit={handleUpdateProposal} className="relative z-10 space-y-6 flex-1">
                         <div className="flex justify-between items-center mb-4">
@@ -429,7 +429,7 @@ export default function ProposalsList({
                     </form>
                 ) : isChatting ? (
                     <div className="relative z-10 flex-1 flex flex-col">
-                        <ProposalChat 
+                        <ProposalChat
                             proposalId={proposal.id}
                             currentUserId={currentUserId}
                             currentFloorId={currentFloorId}
@@ -524,7 +524,7 @@ export default function ProposalsList({
                                     <MessageSquare className="w-3.5 h-3.5" />
                                     Discuss
                                 </button>
-                                
+
                                 {isCreator && (
                                     <div className="flex items-center gap-6">
                                         <button
@@ -555,7 +555,7 @@ export default function ProposalsList({
 
     return (
         <div className="space-y-12 mt-12 bg-transparent pb-32">
-            
+
             {!hideHeader && !isCreatingOverride && (
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-12">
                     <div>
@@ -725,7 +725,7 @@ export default function ProposalsList({
 
             {/* Historical Records */}
             {pastProposals.length > 0 && (
-                <div className="pt-24 border-t border-slate-200">
+                <div className="pt-12 border-t border-slate-200">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-12 flex items-center gap-4">
                         Historical Archives
                         <div className="h-[1px] flex-1 bg-slate-100"></div>
