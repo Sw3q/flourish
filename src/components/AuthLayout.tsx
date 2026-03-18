@@ -1,8 +1,10 @@
-import { Navigate, Outlet, Link } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { CONFIG } from '../config';
+import Sidebar from './Sidebar';
+import { cn } from '../lib/utils';
 
 export default function AuthLayout() {
     const [session, setSession] = useState<any>(null);
@@ -11,6 +13,7 @@ export default function AuthLayout() {
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
     const [userRole, setUserRole] = useState<string>('member');
     const [currentFloorId, setCurrentFloorId] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
         if (CONFIG.BYPASS_AUTH) {
@@ -81,43 +84,37 @@ export default function AuthLayout() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <nav className="bg-white shadow-sm border-b border-primary-100 sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <Link to="/building" className="flex items-center hover:opacity-80 transition-opacity">
-                            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                                Frontier Tower Fund
-                            </span>
-                        </Link>
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/building"
-                                className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-                            >
-                                Tower
-                            </Link>
-                            {isAdmin && (
-                                <Link
-                                    to="/admin"
-                                    className="text-sm font-medium text-primary-600 hover:text-primary-700 px-3 py-1 bg-primary-50 rounded-lg transition-colors"
-                                >
-                                    Admin
-                                </Link>
-                            )}
-                            <button
-                                onClick={() => supabase.auth.signOut()}
-                                className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-                            >
-                                Sign out
-                            </button>
-                        </div>
-                    </div>
+        <div className="min-h-screen bg-[#FCFAF7] flex selection:bg-primary-100 selection:text-primary-900">
+            <Sidebar 
+                isOpen={isSidebarOpen} 
+                onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
+            />
+            
+            <main className={cn(
+                "flex-1 min-h-screen relative transition-all duration-500 ease-in-out",
+                isSidebarOpen ? "w-[calc(100vw-320px)]" : "w-[calc(100vw-80px)]"
+            )}>
+                <div className="w-full h-full px-6 md:px-12 py-8">
+                    <Outlet context={{ currentFloorId, userRole, isAdmin }} />
                 </div>
-            </nav>
-            <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Outlet context={{ currentFloorId, userRole }} />
             </main>
+
+            <style>{`
+                .grain {
+                    position: relative;
+                }
+                .grain::before {
+                    content: "";
+                    position: fixed;
+                    inset: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0.1;
+                    pointer-events: none;
+                    z-index: 50;
+                    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+                }
+            `}</style>
         </div>
     );
 }

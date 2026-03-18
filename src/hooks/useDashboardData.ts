@@ -116,7 +116,7 @@ export function useDashboardData(floorIdOverride?: string | null) {
             setFundBalance(balance);
         }
 
-        // Fetch active recurring expenses for monthly burn rate on this floor
+        // Fetch active recurring expenses for monthly expenses rate on this floor
         const { data: expenses } = await supabase
             .from('recurring_expenses')
             .select('amount')

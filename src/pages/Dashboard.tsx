@@ -66,8 +66,8 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-32 grain">
-            
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-32">
+
             {/* Context Awareness Bar */}
             {!isCurrentFloor && (
                 <div className="bg-slate-900 text-white p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl border border-white/10 group">
@@ -134,7 +134,7 @@ export default function Dashboard() {
                             </div>
                             <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] flex flex-col justify-between hover:border-slate-300 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                                 <div className="flex justify-between items-start">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Monthly Burn</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Monthly Expenses</span>
                                     <RotateCcw className="w-5 h-5 text-slate-200 group-hover:rotate-180 transition-transform duration-1000" />
                                 </div>
                                 <div>
@@ -150,12 +150,12 @@ export default function Dashboard() {
                     {/* Delegation Module */}
                     <div className="bg-[#FAF9F6] border border-slate-200 p-8 rounded-[3rem] shadow-sm flex flex-col h-full relative overflow-hidden group">
                         <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary-100/50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        
+
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-2xl font-display font-extrabold tracking-tight">Trust Network</h2>
                             <UserPlus className="w-5 h-5 text-primary-600" />
                         </div>
-                        
+
                         <p className="text-slate-500 text-sm leading-relaxed mb-10">
                             Empower a peer to act on your behalf across all floor initiatives.
                         </p>
@@ -205,10 +205,10 @@ export default function Dashboard() {
                     {/* Identity Linkage */}
                     <div className="bg-slate-900 p-8 rounded-[3rem] text-white relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 via-transparent to-transparent opacity-50"></div>
-                        
+
                         <div className="relative z-10">
                             <h2 className="text-2xl font-display font-extrabold tracking-tight mb-8">Impact ID</h2>
-                            
+
                             {currentUser?.atproto_handle ? (
                                 <div className="space-y-6">
                                     <div className="p-5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-between">
@@ -273,7 +273,7 @@ export default function Dashboard() {
                     <h2 className="text-4xl font-display font-extrabold tracking-tight">Governance Deck</h2>
                     <span className="text-xs font-bold text-slate-400 tracking-widest">ACTIVE PROPOSALS</span>
                 </div>
-                
+
                 <div className="relative">
                     {currentUser && (
                         <ProposalsList
