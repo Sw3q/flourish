@@ -1,9 +1,10 @@
-import { UserPlus, BadgeDollarSign, RotateCcw, Check, ArrowLeft, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { UserPlus, RotateCcw, Check, ArrowLeft, ArrowUpRight, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useHypercerts } from '../hooks/useHypercerts';
+import { useProposals } from '../hooks/useProposals';
 
 export default function Dashboard() {
     const { floorId: floorIdParam } = useParams();
@@ -19,9 +20,13 @@ export default function Dashboard() {
         delegateVote,
         delegateVoteForProposal,
         getVotingPower,
-        refreshData,
+        refreshData: refreshFloorData,
         floorName,
     } = useDashboardData(floorIdParam);
+
+    const { refreshData: refreshProposals } = useProposals(currentUser?.id || '', floorIdParam || (currentUser as any)?.floor_id);
+
+    const [isCreating, setIsCreating] = useState(false);
 
     const isCurrentFloor = !floorIdParam || floorIdParam === (currentUser as any)?.floor_id;
     const { linkAtProtoIdentity, resolveHandle } = useHypercerts();
@@ -45,7 +50,7 @@ export default function Dashboard() {
 
         const success = await updateAtProtoCredentials(handle.trim(), appPassword.trim());
         if (success) {
-            await refreshData();
+            await Promise.all([refreshFloorData(), refreshProposals()]);
         }
         setLinking(false);
     };
@@ -88,62 +93,95 @@ export default function Dashboard() {
             {/* Premium Header & High-Impact Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-8 flex flex-col gap-8">
-                    <header className="border-b border-slate-200 pb-12">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-8 h-[2px] bg-primary-600"></div>
-                            <span className="text-primary-600 font-bold tracking-[0.3em] uppercase text-[10px]">Floor Identity</span>
+                    {/* Condensed One-Line Header */}
+                    <header className="bg-white border border-slate-200 p-6 md:p-8 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-8 shadow-sm">
+                        <div className="flex flex-col">
+                            <span className="text-primary-600 font-bold tracking-[0.3em] uppercase text-[9px] mb-1">Floor Identity</span>
+                            <h1 className="text-3xl font-display font-extrabold tracking-tight text-slate-900">
+                                {floorName || 'Operational'}
+                            </h1>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-display font-extrabold tracking-tight leading-[0.95] text-slate-900 mb-6">
-                            {floorName || 'Operational'} <br />
-                            <span className="text-slate-400">Dashboard.</span>
-                        </h1>
-                        <div className="flex items-center gap-4 text-slate-500 font-medium italic">
-                            <span>Welcome, {currentUser?.email.split('@')[0]}</span>
-                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                            <span>{new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+
+                        <div className="h-12 w-[1px] bg-slate-100 hidden md:block"></div>
+
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Liquidity Pool</span>
+                            <div className="text-2xl font-display font-extrabold text-slate-900">
+                                ${fundBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </div>
+                        </div>
+
+                        <div className="h-12 w-[1px] bg-slate-100 hidden md:block"></div>
+
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Voting Weight</span>
+                            <div className="text-2xl font-display font-extrabold text-slate-900">
+                                {votingPower} <span className="text-[10px] opacity-40">units</span>
+                            </div>
+                        </div>
+
+                        <div className="h-12 w-[1px] bg-slate-100 hidden md:block"></div>
+
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Monthly Expenses</span>
+                            <div className="text-2xl font-display font-extrabold text-slate-900">
+                                ${monthlyBurnRate.toLocaleString()}
+                            </div>
                         </div>
                     </header>
 
-                    {/* Dynamic Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white border border-slate-200 p-10 rounded-[2.5rem] relative overflow-hidden group hover:border-primary-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-700 animate-float">
-                                <BadgeDollarSign className="w-32 h-32" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8 block">Liquidity Pool</span>
-                            <div className="text-6xl font-display font-extrabold text-slate-900 mb-2">
-                                ${fundBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                <span className="text-xl align-top text-slate-300 ml-1">.{(fundBalance % 1).toFixed(2).split('.')[1]}</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-6">
-                                <div className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black rounded-full uppercase tracking-widest">Available</div>
-                            </div>
+                    {/* Launch New Proposal Section - Positioned at the top of the column */}
+                    <div className="flex flex-col gap-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-3xl font-display font-extrabold tracking-tight">Governance.</h2>
+                            <button
+                                onClick={() => setIsCreating(!isCreating)}
+                                disabled={!isCurrentFloor}
+                                className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-primary-700 text-white font-black uppercase tracking-widest text-[9px] rounded-full transition-all shadow-lg disabled:opacity-40"
+                            >
+                                {isCreating ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                                {isCreating ? 'Cancel' : 'Launch New Proposal'}
+                            </button>
                         </div>
 
-                        <div className="grid grid-rows-2 gap-6">
-                            <div className="bg-slate-950 p-8 rounded-[2.5rem] text-white flex flex-col justify-between group overflow-hidden relative hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                                <div className="flex justify-between items-start relative z-10">
-                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Voting Weight</span>
-                                    <ShieldCheck className="w-5 h-5 opacity-40 group-hover:rotate-12 transition-transform" />
-                                </div>
-                                <div className="relative z-10">
-                                    <div className="text-5xl font-display font-extrabold mb-1">{votingPower} units</div>
-                                    <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Current Influence</div>
-                                </div>
+                        {isCreating && currentUser && (
+                            <div className="animate-in slide-in-from-top-4 duration-500">
+                                <ProposalsList
+                                    currentUserId={currentUser.id}
+                                    currentFloorId={floorIdParam || (currentUser as any).floor_id}
+                                    members={members}
+                                    proposalDelegations={proposalDelegations}
+                                    globalDelegatedTo={currentUser.delegated_to}
+                                    onDelegateProposal={isCurrentFloor ? delegateVoteForProposal : async () => false}
+                                    getVotingPower={getVotingPower}
+                                    disabled={!isCurrentFloor}
+                                    isCreatingOverride={true}
+                                    onCloseCreating={() => setIsCreating(false)}
+                                />
                             </div>
-                            <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] flex flex-col justify-between hover:border-slate-300 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                                <div className="flex justify-between items-start">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Monthly Expenses</span>
-                                    <RotateCcw className="w-5 h-5 text-slate-200 group-hover:rotate-180 transition-transform duration-1000" />
-                                </div>
-                                <div>
-                                    <div className="text-4xl font-display font-extrabold text-slate-900 mb-1">${monthlyBurnRate.toLocaleString()}</div>
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Committed Expenses</div>
-                                </div>
+                        )}
+                    </div>
+
+                    {/* Proposals Section */}
+                    {!isCreating && (
+                        <div className="space-y-8">
+                            <div className="relative">
+                                {currentUser && (
+                                    <ProposalsList
+                                        currentUserId={currentUser.id}
+                                        currentFloorId={floorIdParam || (currentUser as any).floor_id}
+                                        members={members}
+                                        proposalDelegations={proposalDelegations}
+                                        globalDelegatedTo={currentUser.delegated_to}
+                                        onDelegateProposal={isCurrentFloor ? delegateVoteForProposal : async () => false}
+                                        getVotingPower={getVotingPower}
+                                        disabled={!isCurrentFloor}
+                                        hideHeader={true}
+                                    />
+                                )}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className="lg:col-span-4 flex flex-col gap-6 pt-12 lg:pt-0">
@@ -267,28 +305,6 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Main Activities Section */}
-            <div className="space-y-8">
-                <div className="flex items-baseline justify-between border-b border-slate-200 pb-6">
-                    <h2 className="text-4xl font-display font-extrabold tracking-tight">Governance Deck</h2>
-                    <span className="text-xs font-bold text-slate-400 tracking-widest">ACTIVE PROPOSALS</span>
-                </div>
-
-                <div className="relative">
-                    {currentUser && (
-                        <ProposalsList
-                            currentUserId={currentUser.id}
-                            currentFloorId={floorIdParam || (currentUser as any).floor_id}
-                            members={members}
-                            proposalDelegations={proposalDelegations}
-                            globalDelegatedTo={currentUser.delegated_to}
-                            onDelegateProposal={isCurrentFloor ? delegateVoteForProposal : async () => false}
-                            getVotingPower={getVotingPower}
-                            disabled={!isCurrentFloor}
-                        />
-                    )}
-                </div>
-            </div>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

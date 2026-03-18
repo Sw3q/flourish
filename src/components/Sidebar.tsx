@@ -1,9 +1,9 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { 
-    LayoutDashboard, 
-    Building2, 
-    LogOut, 
-    ChevronRight, 
+import {
+    LayoutDashboard,
+    Building2,
+    LogOut,
+    ChevronRight,
     Search,
     User,
     Settings,
@@ -28,7 +28,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
     const floors = useFloors();
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredFloors = floors.filter(f => 
+    const filteredFloors = floors.filter(f =>
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.floor_number.toString().includes(searchQuery)
     );
@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vertical OS</p>
                     </div>
                 </Link>
-                <button 
+                <button
                     onClick={onToggle}
                     className={cn(
                         "p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all duration-300",
@@ -109,12 +109,12 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Floors Directory</h3>
                         <Layers className="w-3 h-3 text-slate-300" />
                     </div>
-                    
+
                     {/* Floor Search */}
                     <div className="px-2 mb-4">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Search floors..."
                                 value={searchQuery}
@@ -189,7 +189,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     title="Terminate Session"
                 >
                     <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600 flex-shrink-0" />
-                    {isOpen && <span className="font-bold text-xs whitespace-nowrap">Terminate Session</span>}
+                    {isOpen && <span className="font-bold text-xs whitespace-nowrap">Log Out</span>}
                 </button>
             </div>
         </aside>

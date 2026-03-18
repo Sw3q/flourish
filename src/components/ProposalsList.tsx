@@ -13,6 +13,9 @@ export interface ProposalsListProps {
     onDelegateProposal: (proposalId: string, targetUserId: string | null) => Promise<boolean>;
     getVotingPower: (proposalId: string) => Promise<number>;
     disabled?: boolean;
+    hideHeader?: boolean;
+    isCreatingOverride?: boolean;
+    onCloseCreating?: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -231,7 +234,10 @@ export default function ProposalsList({
     globalDelegatedTo,
     onDelegateProposal,
     getVotingPower,
+    onCloseCreating,
     disabled = false,
+    hideHeader = false,
+    isCreatingOverride = false,
 } : ProposalsListProps) {
     const {
         proposals,
@@ -246,7 +252,9 @@ export default function ProposalsList({
         updateProposalHypercert,
     } = useProposals(currentUserId, currentFloorId);
 
-    const [isCreating, setIsCreating] = useState(false);
+    const [isCreatingInternal, setIsCreatingInternal] = useState(false);
+    const isCreating = isCreatingOverride || isCreatingInternal;
+    const setIsCreating = onCloseCreating || setIsCreatingInternal;
     const [newTitle, setNewTitle] = useState('');
     const [newDesc, setNewDesc] = useState('');
     const [newAmount, setNewAmount] = useState('');
@@ -271,7 +279,11 @@ export default function ProposalsList({
         setSubmitting(true);
         const success = await createProposal(newTitle, newDesc, Number(newAmount), newCatId, Number(newDurationDays));
         if (success) {
-            setIsCreating(false);
+            if (onCloseCreating) {
+                onCloseCreating();
+            } else {
+                setIsCreatingInternal(false);
+            }
             setNewTitle('');
             setNewDesc('');
             setNewAmount('');
@@ -451,20 +463,21 @@ export default function ProposalsList({
     return (
         <div className="space-y-12 mt-12 bg-transparent pb-32">
             
-            {/* Action Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-12">
-                <div>
-                    <h2 className="text-4xl font-display font-extrabold tracking-tight text-slate-900 mb-2">Initiatives.</h2>
-                    <p className="text-slate-500 font-medium italic">Communal requests for the floor's flourishing.</p>
+            {!hideHeader && !isCreatingOverride && (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-12">
+                    <div>
+                        <h2 className="text-4xl font-display font-extrabold tracking-tight text-slate-900 mb-2">Initiatives.</h2>
+                        <p className="text-slate-500 font-medium italic">Communal requests for the floor's flourishing.</p>
+                    </div>
+                    <button
+                        onClick={() => setIsCreating(!isCreating)}
+                        className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-slate-900 hover:bg-primary-700 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full transition-all shadow-xl shadow-slate-900/10"
+                    >
+                        {isCreating ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                        {isCreating ? 'Abandon Draft' : 'Launch New Proposal'}
+                    </button>
                 </div>
-                <button
-                    onClick={() => setIsCreating(!isCreating)}
-                    className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-slate-900 hover:bg-primary-700 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full transition-all shadow-xl shadow-slate-900/10"
-                >
-                    {isCreating ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                    {isCreating ? 'Abandon Draft' : 'Launch New Proposal'}
-                </button>
-            </div>
+            )}
 
             {showToast && (
                 <div className="fixed bottom-12 right-12 bg-slate-900 text-white px-8 py-6 rounded-[2rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-12 duration-500 z-50 border border-white/10">

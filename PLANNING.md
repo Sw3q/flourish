@@ -3,7 +3,7 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 26: Impact Visualization**: Enhance Hypercert displays on the dashboard and automate impact reporting for passed proposals.
+- **Phase 35: Dashboard Layout Refinement**: Eliminate whitespace by moving governance mechanisms into the main grid's left column and positioning the launch button at the top.
 
 ## Upcoming Objectives
 - **Phase 27: Governance Refinement**: Consider global vs floor-specific voting power configurations for super_admins.

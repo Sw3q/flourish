@@ -3,11 +3,12 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
-- [ ] **Phase 26: Impact Visualization**
+- [ ] **Phase 35: Dashboard Layout Refinement**
+    - [ ] 1. Move Governance and Proposals section inside the `lg:col-span-8` column in `Dashboard.tsx`.
+    - [ ] 2. Position "Launch New Proposal" button at the top of the governance column.
+    - [ ] 3. Ensure the two-column layout is balanced and eliminates unnecessary whitespace.
+- [x] **Phase 34: Dashboard Refactoring**
     - [ ] 1. Enhance Hypercert displays on the dashboard.
-    - [ ] 2. Automate impact reporting notifications for passed proposals.
-- [ ] **Phase 27: Governance Refinement**
-    - [ ] 1. Implement global vs floor-specific voting power configurations for super_admins.
 
 ## Completed Tasks History
 - **Phase 33 (Real Data Integration)**: Connected total balance, active proposals, and 30rd-day activity trends to Supabase data in `TowerDashboard.tsx`.
