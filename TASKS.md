@@ -3,14 +3,13 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
-- [ ] **Phase 35: Dashboard Layout Refinement**
-    - [ ] 1. Move Governance and Proposals section inside the `lg:col-span-8` column in `Dashboard.tsx`.
-    - [ ] 2. Position "Launch New Proposal" button at the top of the governance column.
-    - [ ] 3. Ensure the two-column layout is balanced and eliminates unnecessary whitespace.
-- [x] **Phase 34: Dashboard Refactoring**
-    - [ ] 1. Enhance Hypercert displays on the dashboard.
+- [ ] **Phase 36: Governance Refinement**
+    - [ ] 1. Explore global vs floor-specific voting power configurations for super_admins.
+    - [ ] 2. Audit delegation override logic for edge cases in multi-floor scenarios.
 
 ## Completed Tasks History
+- **Phase 35 (Dashboard Layout Refinement)**: Eliminated whitespace by moving governance mechanisms into the main grid and positioning the launch button at the top.
+- **Phase 34 (Dashboard Refactoring)**: Condensed stats into a single-line header and improved information hierarchy in `Dashboard.tsx`.
 - **Phase 33 (Real Data Integration)**: Connected total balance, active proposals, and 30rd-day activity trends to Supabase data in `TowerDashboard.tsx`.
 - **Phase 32 (Global Sidebar)**: Implemented a persistent, collapsible sidebar in `AuthLayout.tsx` and optimized viewport width.
 - **Phase 31 (Tower Dashboard Redesign)**: Replaced `BuildingView.tsx` with `TowerDashboard.tsx`, added SVG visualizations, and improved layout.

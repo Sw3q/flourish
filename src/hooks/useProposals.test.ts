@@ -94,6 +94,38 @@ describe('useProposals Hook', () => {
         expect(result.current.proposals).toHaveLength(0);
     });
 
+    it('updates a proposal and refetches data', async () => {
+        const proposal = {
+            id: 'p-upd', title: 'Old Title', description: 'Old Desc', amount: 50, status: 'active',
+            created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 86400000).toISOString(),
+            category_id: 'cat1', creator_id: 'user1',
+            categories: { name: 'Tech', color_theme: 'blue' }, profiles: { email: 'u@t.com' }
+        };
+        const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+        const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+        (supabase.from as any).mockImplementation((table: string) =>
+            table === 'proposals'
+                ? { ...safeMock(), update: mockUpdate, select: () => createBulletproofMock([proposal]) }
+                : safeMock()
+        );
+
+        const { result } = renderHook(() => useProposals('user1', 'floor1'));
+        await waitFor(() => expect(result.current.proposals).toHaveLength(1));
+
+        await act(async () => { 
+            await result.current.updateProposal('p-upd', 'New Title', 'New Desc', 100, 'cat1'); 
+        });
+
+        expect(mockUpdate).toHaveBeenCalledWith({
+            title: 'New Title',
+            description: 'New Desc',
+            amount: 100,
+            category_id: 'cat1'
+        });
+        expect(mockUpdateEq).toHaveBeenCalledWith('id', 'p-upd');
+    });
+
     describe('castVote', () => {
         // Shared setup: renders hook with no prior votes
         const renderHookWithVotes = (existingVote?: boolean) => {

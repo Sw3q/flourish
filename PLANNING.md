@@ -3,12 +3,15 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 35: Dashboard Layout Refinement**: Eliminate whitespace by moving governance mechanisms into the main grid's left column and positioning the launch button at the top.
+- **Phase 38: Governance Audit**: Perform a deep audit of the new proposal editing and chat mechanisms in multi-floor scenarios.
 
 ## Upcoming Objectives
-- **Phase 27: Governance Refinement**: Consider global vs floor-specific voting power configurations for super_admins.
+- **Phase 39: Impact Visualization**: Enhance Hypercert displays and cross-floor impact tracking metrics.
 
 ## Completed Plans History
+- **Phase 37 (Proposal Enhancements)**: Implemented proposal editing for authors and a dedicated chat/comment interface for each proposal instance.
+- **Phase 35 (Dashboard Layout Refinement)**: Optimized dashboard grid layout to eliminate whitespace and balance governance vs. identity modules.
+- **Phase 34 (Dashboard Refactoring)**: Implemented condensed, high-density header for floor metrics in `Dashboard.tsx`.
 - **Phase 33 (Real Data Integration)**: Connected dashboard metrics and activity trends to live Supabase data.
 - **Phase 32 (Global Sidebar)**: Implemented collapsible sidebar for persistent navigation and maximized viewport space.
 - **Phase 31 (Tower Dashboard Redesign)**: Replaced legacy building view with the new data-rich `TowerDashboard.tsx`.

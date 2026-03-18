@@ -225,6 +225,24 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
         return !error;
     };
 
+    const updateProposal = async (proposalId: string, title: string, description: string, amount: number, categoryId: string) => {
+        const { error } = await supabase
+            .from('proposals')
+            .update({ 
+                title, 
+                description, 
+                amount, 
+                category_id: categoryId 
+            })
+            .eq('id', proposalId);
+
+        if (!error) {
+            await fetchData();
+            return true;
+        }
+        return false;
+    };
+
     const updateProposalHypercert = async (proposalId: string, hypercertUri: string) => {
         const { error } = await supabase
             .from('proposals')
@@ -252,6 +270,7 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
         createProposal, 
         castVote, 
         deleteProposal, 
+        updateProposal,
         updateProposalHypercert,
         refreshData: fetchData 
     };

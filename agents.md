@@ -12,7 +12,7 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Recurring Expenses**: Admins can define and manage monthly recurring expenses, which are manually processed to deduct from the communal pot, providing transparency to all users on the dashboard.
 *   **Hypercerts (Impact Tracking)**: Impact records can be issued for passed proposals using the AT Protocol. Issuance power is decentralized: any approved member who participated in the proposal (directly or through delegation) can link their identity and issue a Hypercert (`HypercertIssuanceModal.tsx`, `useHypercerts.ts`).
 
-*   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features an interactive tower navigation and global activity visualizations. Individual floor dashboards are accessed via `/floor/:floorId`.
+*   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features global activity visualizations and floor-by-floor treasury distributions. Individual floor dashboards are accessed via `/floor/:floorId`.
 *   **Global Sidebar**: A persistent, collapsible navigation sidebar is managed by `AuthLayout.tsx`, allowing for deep-floor access and search across the entire tower.
 *   **Multitenancy**: Data is scoped by `floor_id`. Approved users have read access to all floors for transparency but can only vote or perform admin actions on their primary assigned floor.
 *   **Super Admin Role**: A `super_admin` role exists with global oversight and bypass capabilities for approval checks.
@@ -44,6 +44,7 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Vote Manipulation / DB Updates**: Vote toggling and `category_delegations` assignment must use explicit `.delete()` then `.insert()` commands. Avoid using `.update()` or `.upsert()` for junction tables missing formal serial primary keys, due to PostgREST silent failure bugs.
 *   **RLS Helpers**: Use `public.is_super_admin()` and `public.is_approved()` SECURITY DEFINER functions in RLS policies to avoid infinite recursion when querying the `profiles` table.
 *   **Hypercert Issuance**: Only users who contributed voting weight to a proposal (directly or via delegation) are permitted to issue its Hypercert. This is enforced via RLS and the `evaluate_proposal` logic.
+*   **Component Composition**: Highly specialized UI components (like `ProposalsList`) should expose control props (`hideHeader`, `isCreatingOverride`) to parent pages (`Dashboard.tsx`) to allow for context-specific layout overrides and state management.
 
 ## 6. Forbidden Patterns
 *   **Direct Mutation**: Never mutate React component state directly; always use functional updates.
