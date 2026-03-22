@@ -20,13 +20,28 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const floors = useFloors();
 
+    const [error, setError] = useState<string | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
+    const [checking, setChecking] = useState(false);
+
     useEffect(() => {
         if (!isLogin && floors.length > 0 && !floorId) {
             setFloorId(floors[0].id);
         }
     }, [isLogin, floors, floorId]);
-    const [error, setError] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        const checkExistence = async () => {
+            if (email.includes('@') && email.includes('.')) {
+                setChecking(true);
+                const { data: exists } = await supabase.rpc('check_user_exists', { email_to_check: email });
+                setIsLogin(!!exists);
+                setChecking(false);
+            }
+        };
+        const timer = setTimeout(checkExistence, 500);
+        return () => clearTimeout(timer);
+    }, [email]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,6 +95,7 @@ export default function Login() {
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">
                                 Email
+                                {checking && <Loader2 className="inline w-3 h-3 ml-2 animate-spin text-slate-400" />}
                             </label>
                             <input
                                 type="email"
@@ -92,7 +108,7 @@ export default function Login() {
                         </div>
 
                         {!isLogin && (
-                            <div>
+                            <div className="animate-in slide-in-from-top-2 duration-500">
                                 <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">
                                     Base Community Floor
                                 </label>
@@ -122,14 +138,14 @@ export default function Login() {
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || checking}
                             className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-3 px-4 font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-lg shadow-slate-900/20"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    Send Magic Link
+                                    {isLogin ? 'Sign In & Enter' : 'Create Resident Account'}
                                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
@@ -137,14 +153,16 @@ export default function Login() {
                     </form>
 
                     <div className="mt-8 text-center text-sm">
-                        <button
-                            onClick={() => setIsLogin(!isLogin)}
-                            className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                        >
-                            {isLogin
-                                ? 'Need an account? Sign up'
-                                : 'Already have an account? Sign in'}
-                        </button>
+                        {!checking && (
+                            <button
+                                onClick={() => setIsLogin(!isLogin)}
+                                className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                            >
+                                {isLogin
+                                    ? 'First time resident? Sign up'
+                                    : 'Already a resident? Sign in'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
