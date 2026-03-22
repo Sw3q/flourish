@@ -138,7 +138,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                                     "text-[10px] font-black w-6 text-center flex-shrink-0",
                                     floorId === floor.id ? 'text-primary-400' : 'text-slate-300'
                                 )}>
-                                    {floor.floor_number.toString().padStart(2, '0')}
+                                    {floor.floor_number === 1 ? 'M' : floor.floor_number.toString().padStart(2, '0')}
                                 </span>
                                 <span className="font-bold text-xs truncate">{floor.name}</span>
                                 {floorId === floor.id && <div className="w-1.5 h-1.5 rounded-full bg-primary-500 ml-auto animate-pulse flex-shrink-0"></div>}

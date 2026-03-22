@@ -16,7 +16,6 @@ export default function Login() {
 
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [floorId, setFloorId] = useState('');
     const [loading, setLoading] = useState(false);
     const floors = useFloors();
@@ -36,28 +35,15 @@ export default function Login() {
         setMessage(null);
 
         try {
-            if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                // Fix: navigate to the protected layout area where AuthLayout will verify their approval status
-                navigate('/', { replace: true });
-            } else {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: `${window.location.origin}/pending`,
-                        data: {
-                            floor_id: floorId
-                        }
-                    },
-                });
-                if (error) throw error;
-                setMessage('Check your email for the confirmation link!');
-            }
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    emailRedirectTo: window.location.origin,
+                    data: !isLogin ? { floor_id: floorId } : undefined
+                }
+            });
+            if (error) throw error;
+            setMessage('Check your email for the magic link!');
         } catch (err: any) {
             if (err.message.toLowerCase().includes('rate limit')) {
                 setError('Registration limit reached for this hour. Please try again later or contact an admin to be manually added.');
@@ -104,19 +90,6 @@ export default function Login() {
                                 placeholder="you@frontier.com"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1 ml-1">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all outline-none bg-white/50"
-                                placeholder="••••••••"
-                            />
-                        </div>
 
                         {!isLogin && (
                             <div>
@@ -156,7 +129,7 @@ export default function Login() {
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    {isLogin ? 'Sign in' : 'Create account'}
+                                    Send Magic Link
                                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}

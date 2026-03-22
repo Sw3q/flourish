@@ -45,6 +45,7 @@ export function useTowerStats() {
                     .order('floor_number', { ascending: true });
 
                 if (floorsError) throw floorsError;
+                const filteredFloors = (floorsData as Floor[]).filter(f => f.floor_number !== 13);
 
                 // 2. Fetch all profiles (to count members)
                 const { data: profilesData, error: profilesError } = await supabase
@@ -79,7 +80,7 @@ export function useTowerStats() {
 
                 if (transactionsError) throw transactionsError;
 
-                const floors = floorsData as Floor[];
+                const floors = filteredFloors as Floor[];
                 const profiles = profilesData as Profile[];
                 const activeProposals = ((activeProposalsData || []) as Proposal[]).filter(p => new Date(p.expires_at) > now);
                 const recentProposals = (recentProposalsData || []) as { id: string; created_at: string }[];

@@ -7,7 +7,11 @@ export function useFloors() {
 
     useEffect(() => {
         const fetchFloors = async () => {
-            const { data } = await supabase.from('floors').select('*').order('name');
+            const { data } = await supabase
+                .from('floors')
+                .select('*')
+                .neq('floor_number', 13)
+                .order('floor_number', { ascending: false });
             if (data) setFloors(data as Floor[]);
         };
         fetchFloors();
