@@ -7,6 +7,11 @@ export type Profile = {
     email: string;
     role: 'admin' | 'member' | 'super_admin';
     is_approved: boolean;
+    floor_id?: string;
+    floors?: {
+        name: string;
+        floor_number: number;
+    };
 };
 
 export type Category = {
@@ -68,7 +73,7 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
     };
 
     const fetchUsers = async () => {
-        let q = supabase.from('profiles').select('*').order('email', { ascending: true });
+        let q = supabase.from('profiles').select('*, floors(name, floor_number)').order('email', { ascending: true });
         if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
 
         const { data } = await q;
@@ -187,10 +192,13 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         if (user.role === 'super_admin') nextRole = 'admin';
         if (user.role === 'member') return false;
 
-        const { error } = await supabase
+        const { error, count } = await supabase
             .from('profiles')
             .update({ role: nextRole })
-            .eq('id', userId);
+            .eq('id', userId)
+            .select();
+
+        console.log('Demote attempt:', { userId, nextRole, error, count });
 
         if (!error) {
             setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: nextRole } : u));

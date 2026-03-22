@@ -119,8 +119,8 @@ export default function AdminDashboard() {
         );
     }
 
-    const pendingUsers = users.filter((u: any) => !u.is_approved && u.role !== 'admin');
-    const approvedUsers = users.filter((u: any) => u.is_approved || u.role === 'admin');
+    const pendingUsers = users.filter((u: any) => !u.is_approved && u.role === 'member');
+    const approvedUsers = users.filter((u: any) => u.is_approved || u.role === 'admin' || u.role === 'super_admin');
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -145,7 +145,12 @@ export default function AdminDashboard() {
                         {pendingUsers.map(user => (
                             <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
                                 <div className="mb-4">
-                                    <p className="font-medium text-slate-900 truncate" title={user.email}>{user.email}</p>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium text-slate-900 truncate" title={user.email}>{user.email}</p>
+                                        <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                            {user.floors?.name || 'N/A'}
+                                        </span>
+                                    </div>
                                     <p className="text-xs text-slate-400 mt-1">Requested access recently</p>
                                 </div>
                                 <button
@@ -168,6 +173,7 @@ export default function AdminDashboard() {
                         <thead className="bg-slate-50">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Floor</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Role</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -177,6 +183,9 @@ export default function AdminDashboard() {
                                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900">{user.email}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap font-mono text-[10px] text-slate-400">
+                                        {user.floors?.name || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
