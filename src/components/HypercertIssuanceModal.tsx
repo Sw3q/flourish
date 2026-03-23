@@ -53,8 +53,8 @@ export default function HypercertIssuanceModal({ proposal, onClose, onSuccess }:
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-primary-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <Award className="w-5 h-5 text-primary-500" />
@@ -85,7 +85,7 @@ export default function HypercertIssuanceModal({ proposal, onClose, onSuccess }:
                             </div>
                             <button
                                 onClick={onClose}
-                                className="w-full py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors"
+                                className="w-full py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors"
                             >
                                 Go to Dashboard
                             </button>
@@ -111,7 +111,7 @@ export default function HypercertIssuanceModal({ proposal, onClose, onSuccess }:
                             <button
                                 type="submit"
                                 disabled={issuingLoading}
-                                className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2"
                             >
                                 {issuingLoading ? (
                                     <>

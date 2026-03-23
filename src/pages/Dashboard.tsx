@@ -75,7 +75,7 @@ export default function Dashboard() {
 
             {/* Context Awareness Bar */}
             {!isCurrentFloor && (
-                <div className="bg-slate-900 text-white p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl border border-white/10 group">
+                <div className="bg-primary-100 text-primary-900 p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl border border-primary-200 group">
                     <div className="flex items-center text-sm font-bold tracking-tight px-4">
                         <div className="w-2 h-2 bg-amber-500 rounded-full mr-3 animate-pulse"></div>
                         VIRTUAL PERSPECTIVE: YOU ARE VIEWING {floorName?.toUpperCase()}
@@ -137,7 +137,7 @@ export default function Dashboard() {
                             <button
                                 onClick={() => setIsCreating(!isCreating)}
                                 disabled={!isCurrentFloor}
-                                className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-primary-700 text-white font-black uppercase tracking-widest text-[9px] rounded-full transition-all shadow-lg disabled:opacity-40"
+                                className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-black uppercase tracking-widest text-[9px] rounded-full transition-all shadow-lg disabled:opacity-40"
                             >
                                 {isCreating ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                                 {isCreating ? 'Cancel' : 'Launch New Proposal'}
@@ -251,15 +251,15 @@ export default function Dashboard() {
                     </div>
 
                     {/* Identity Linkage */}
-                    <div className="bg-slate-900 p-8 rounded-[3rem] text-white relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 via-transparent to-transparent opacity-50"></div>
+                    <div className="bg-primary-50 p-8 rounded-[3rem] text-primary-900 border border-primary-100 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary-200/50 via-transparent to-transparent opacity-50"></div>
 
                         <div className="relative z-10">
                             <h2 className="text-2xl font-display font-extrabold tracking-tight mb-8">Impact ID</h2>
 
                             {currentUser?.atproto_handle ? (
                                 <div className="space-y-6">
-                                    <div className="p-5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-between">
+                                    <div className="p-5 bg-white/60 backdrop-blur-md rounded-2xl border border-primary-100 flex items-center justify-between">
                                         <div className="min-w-0">
                                             <div className="text-[9px] font-black text-primary-400 uppercase tracking-widest mb-1">ATProto Linked</div>
                                             <div className="font-medium text-sm truncate opacity-90">{currentUser.atproto_handle}</div>
@@ -274,7 +274,7 @@ export default function Dashboard() {
                                             setAppPassword(currentUser.atproto_app_password || '');
                                             updateAtProtoCredentials('', '');
                                         }}
-                                        className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                                        className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity text-primary-900"
                                     >
                                         Update Identity
                                     </button>
@@ -288,7 +288,7 @@ export default function Dashboard() {
                                             value={handle}
                                             onChange={(e) => setHandle(e.target.value)}
                                             placeholder="Bluesky Handle"
-                                            className="w-full px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-sm focus:ring-1 focus:ring-primary-400 outline-none transition-all placeholder:text-white/20"
+                                            className="w-full px-5 py-3 bg-white border border-primary-100 rounded-2xl text-sm focus:ring-1 focus:ring-primary-400 outline-none transition-all placeholder:text-slate-400"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -298,13 +298,13 @@ export default function Dashboard() {
                                             value={appPassword}
                                             onChange={(e) => setAppPassword(e.target.value)}
                                             placeholder="App Password"
-                                            className="w-full px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-sm focus:ring-1 focus:ring-primary-400 outline-none transition-all placeholder:text-white/20"
+                                            className="w-full px-5 py-3 bg-white border border-primary-100 rounded-2xl text-sm focus:ring-1 focus:ring-primary-400 outline-none transition-all placeholder:text-slate-400"
                                         />
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={linking || !handle.trim() || !appPassword.trim()}
-                                        className="w-full py-3 bg-white text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-primary-50 transition-colors disabled:opacity-20"
+                                        className="w-full py-3 bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-primary-700 transition-colors disabled:opacity-20"
                                     >
                                         {linking ? 'Verifying...' : 'Link AT Protocol'}
                                     </button>

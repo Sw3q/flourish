@@ -48,7 +48,7 @@ describe('Sidebar Component', () => {
 
     it('calls onToggle when toggle button is clicked', () => {
         render(<Sidebar isOpen={true} onToggle={mockOnToggle} />, { wrapper: BrowserRouter });
-        const toggleBtn = screen.getByRole('button', { name: /PanelLeftClose|PanelLeftOpen/i });
+        const toggleBtn = screen.getByRole('button', { name: /toggle menu/i });
         fireEvent.click(toggleBtn);
         expect(mockOnToggle).toHaveBeenCalled();
     });

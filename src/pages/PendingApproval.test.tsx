@@ -34,7 +34,7 @@ describe('PendingApproval Component', () => {
             </MemoryRouter>
         );
 
-        const checkBtn = screen.getByRole('button', { name: /check status/i });
+        const checkBtn = screen.getByRole('button', { name: /sync status/i });
         fireEvent.click(checkBtn);
 
         await waitFor(() => {
@@ -55,7 +55,7 @@ describe('PendingApproval Component', () => {
             </MemoryRouter>
         );
 
-        const checkBtn = screen.getByRole('button', { name: /check status/i });
+        const checkBtn = screen.getByRole('button', { name: /sync status/i });
         fireEvent.click(checkBtn);
 
         await waitFor(() => {

@@ -74,21 +74,21 @@ export default function TowerDashboard() {
                 {/* Secondary Metrics Column */}
                 <div className="xl:col-span-4 flex flex-col gap-10">
                     {/* Governance Activity Card */}
-                    <div className="flex-1 bg-slate-900 border border-slate-800 p-10 rounded-[3rem] text-white overflow-hidden relative group hover:shadow-2xl transition-all duration-500">
-                        <div className="absolute top-0 right-0 p-10 text-white/5 opacity-50 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
+                    <div className="flex-1 bg-primary-100 border border-primary-200 p-10 rounded-[3rem] text-primary-900 overflow-hidden relative group hover:shadow-2xl transition-all duration-500">
+                        <div className="absolute top-0 right-0 p-10 text-primary-900/5 opacity-50 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
                             <Activity className="w-64 h-64 translate-x-20 -translate-y-20" />
                         </div>
                         <div className="relative z-10 flex flex-col h-full justify-between gap-12">
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Governance Intensity</span>
-                                    <TrendingUp className="w-5 h-5 text-primary-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-600">Governance Intensity</span>
+                                    <TrendingUp className="w-5 h-5 text-primary-600" />
                                 </div>
                                 <div className="text-8xl font-display font-extrabold tracking-tighter leading-none">{governanceIntensity}</div>
-                                <p className="text-sm font-bold text-white/40 mt-4 uppercase tracking-[0.1em]">Verified Active Missions</p>
+                                <p className="text-sm font-bold text-primary-500 mt-4 uppercase tracking-[0.1em]">Verified Active Missions</p>
                             </div>
                             <div className="mt-auto">
-                                <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-6">Temporal Activity Trend (30D)</p>
+                                <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-6">Temporal Activity Trend (30D)</p>
                                 <div className="h-32">
                                     <ActivityTrendChart data={activityTrend} />
                                 </div>

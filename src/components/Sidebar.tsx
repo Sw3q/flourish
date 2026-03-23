@@ -53,6 +53,7 @@ export default function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
                 </Link>
                 <button
                     onClick={onToggle}
+                    aria-label="Toggle Menu"
                     className={cn(
                         "p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all duration-300",
                         !isOpen && "fixed left-5 top-5 bg-white border border-slate-100 shadow-lg"
@@ -123,7 +124,7 @@ export default function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
                                 onClick={() => navigate(`/floor/${floor.id}`)}
                                 className={cn(
                                     "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group",
-                                    floorId === floor.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                                    floorId === floor.id ? 'bg-primary-100 text-primary-900' : 'text-slate-500 hover:bg-primary-50 hover:text-primary-900'
                                 )}
                             >
                                 <span className={cn(

@@ -57,10 +57,10 @@ describe('TowerDashboard Component', () => {
 
         render(<TowerDashboard />, { wrapper: BrowserRouter });
 
-        expect(screen.getByText(/Frontier/)).toBeDefined();
-        expect(screen.getByText(/Verticality/)).toBeDefined();
-        expect(screen.getAllByText(/\$1,234/)).toBeDefined();
-        expect(screen.getByText('2')).toBeDefined();
+        expect(screen.getAllByText(/Frontier/).length).toBeGreaterThan(0);
+        expect(screen.getByText(/Vertical OS/i)).toBeDefined();
+        expect(screen.getByText('$1,235')).toBeDefined();
+        expect(screen.getByText('1')).toBeDefined();
         expect(screen.getByText('5')).toBeDefined();
     });
 });

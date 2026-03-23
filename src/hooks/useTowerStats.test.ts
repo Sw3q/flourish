@@ -27,8 +27,8 @@ describe('useTowerStats Hook', () => {
             { id: 'u3', floor_id: 'f2', is_approved: true },
         ];
         const mockProposals = [
-            { id: 'p1', floor_id: 'f1', status: 'active' },
-            { id: 'p2', floor_id: 'f2', status: 'active' },
+            { id: 'p1', floor_id: 'f1', status: 'active', expires_at: new Date(Date.now() + 86400000).toISOString() },
+            { id: 'p2', floor_id: 'f2', status: 'active', expires_at: new Date(Date.now() + 86400000).toISOString() },
         ];
         const mockTransactions = [
             { floor_id: 'f1', amount: 100, type: 'deposit' },
@@ -52,7 +52,8 @@ describe('useTowerStats Hook', () => {
             if (table === 'proposals') {
                 return {
                     select: () => ({
-                        eq: () => createMock(mockProposals)
+                        eq: () => createMock(mockProposals),
+                        gt: () => createMock([])
                     })
                 };
             }

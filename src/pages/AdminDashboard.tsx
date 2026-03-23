@@ -259,7 +259,7 @@ export default function AdminDashboard() {
                                 />
                             </div>
                         </div>
-                        <button type="submit" className="self-end px-6 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors">
+                        <button type="submit" className="self-end px-6 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
                             Deposit
                         </button>
                     </form>

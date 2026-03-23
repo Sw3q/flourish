@@ -33,7 +33,7 @@ export default function PendingApproval() {
         <div className="min-h-screen flex items-center justify-center p-6 bg-[#FCFAF7] font-sans selection:bg-primary-100 selection:text-primary-900 grain">
             <div className="w-full max-w-2xl relative z-10 flex flex-col md:flex-row bg-white border border-slate-200 rounded-[3rem] overflow-hidden shadow-2xl">
                 {/* Visual Sidebar */}
-                <div className="md:w-1/3 bg-slate-900 p-10 flex flex-col justify-between text-white relative">
+                <div className="md:w-1/3 bg-primary-100 p-10 flex flex-col justify-between text-primary-900 relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary-600/40 to-transparent opacity-50"></div>
                     <div className="relative z-10">
                         <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-12 border border-white/10 animate-pulse">

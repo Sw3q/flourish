@@ -672,6 +672,7 @@ export default function ProposalsList({
                                 <button
                                     onClick={() => navigate('left')}
                                     disabled={clampedIndex === 0}
+                                    aria-label="Previous proposal"
                                     className="hidden md:flex flex-shrink-0 w-16 h-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 transition-all disabled:opacity-20 shadow-xl shadow-black/5"
                                 >
                                     <ChevronLeft className="w-6 h-6" />
@@ -684,6 +685,7 @@ export default function ProposalsList({
                                 <button
                                     onClick={() => navigate('right')}
                                     disabled={clampedIndex === unvotedProposals.length - 1}
+                                    aria-label="Next proposal"
                                     className="hidden md:flex flex-shrink-0 w-16 h-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-primary-600 hover:border-primary-300 transition-all disabled:opacity-20 shadow-xl shadow-black/5"
                                 >
                                     <ChevronRight className="w-6 h-6" />
@@ -692,8 +694,8 @@ export default function ProposalsList({
 
                             {/* Mobile Nav */}
                             <div className="flex md:hidden gap-6">
-                                <button onClick={() => navigate('left')} disabled={clampedIndex === 0} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronLeft className="w-5 h-5" /></button>
-                                <button onClick={() => navigate('right')} disabled={clampedIndex === unvotedProposals.length - 1} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronRight className="w-5 h-5" /></button>
+                                <button aria-label="Previous proposal" onClick={() => navigate('left')} disabled={clampedIndex === 0} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronLeft className="w-5 h-5" /></button>
+                                <button aria-label="Next proposal" onClick={() => navigate('right')} disabled={clampedIndex === unvotedProposals.length - 1} className="w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center disabled:opacity-20 shadow-lg"><ChevronRight className="w-5 h-5" /></button>
                             </div>
 
                             {unvotedProposals.length > 1 && (

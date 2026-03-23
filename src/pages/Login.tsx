@@ -139,7 +139,7 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading || checking}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-3 px-4 font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-lg shadow-slate-900/20"
+                            className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-3 px-4 font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center group shadow-lg shadow-primary-600/20"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />

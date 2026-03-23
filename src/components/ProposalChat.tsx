@@ -98,7 +98,7 @@ export default function ProposalChat({ proposalId, currentUserId, currentFloorId
                 <button 
                     type="submit" 
                     disabled={!newComment.trim() || submitting}
-                    className="w-10 h-10 flex items-center justify-center bg-slate-900 text-white rounded-xl hover:bg-primary-600 disabled:opacity-20 transition-all shadow-lg shadow-black/5"
+                    className="w-10 h-10 flex items-center justify-center bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-20 transition-all shadow-lg shadow-primary-600/20"
                 >
                     <Send className="w-4 h-4" />
                 </button>

@@ -96,7 +96,7 @@ describe('ProposalsList Component — Delegation Rendering', () => {
         expect(screen.getByText(/Voting power delegated/)).toBeDefined();
 
         // Navigate to prop-2
-        fireEvent.click(screen.getByLabelText('Next proposal'));
+        fireEvent.click(screen.getAllByLabelText('Next proposal')[0]);
 
         // prop-2 should still show Yes button
         expect(await screen.findByText(/Yes \(1\)/)).toBeDefined();
@@ -115,7 +115,7 @@ describe('ProposalsList Component — Delegation Rendering', () => {
         expect(delegatedMsgs.length).toBe(1);
 
         // Navigate to prop-2
-        fireEvent.click(screen.getByLabelText('Next proposal'));
+        fireEvent.click(screen.getAllByLabelText('Next proposal')[0]);
 
         // prop-2 (same category-1) should still render its Yes button
         expect(await screen.findByText(/Yes \(1\)/)).toBeDefined();
@@ -150,11 +150,11 @@ describe('ProposalsList Component — Tab Navigation & Swipe-to-Dismiss', () => 
         render(<ProposalsList {...defaultProps} />);
         
         // Tab exists and shows correct counts
-        expect(screen.getByText('To Vote')).toBeDefined();
-        expect(screen.getByText('My Votes')).toBeDefined();
+        expect(screen.getByText(/Pending Actions/i)).toBeDefined();
+        expect(screen.getByText(/Personal Record/i)).toBeDefined();
         
         // Counter "1 of 2" in the To Vote tab
-        expect(screen.getByText('1 of 2')).toBeDefined();
+        expect(screen.getByText('1 of 2 Entries')).toBeDefined();
         
         // The first card's title is visible
         expect(screen.getByText('Test Proposal')).toBeDefined();
@@ -168,7 +168,7 @@ describe('ProposalsList Component — Tab Navigation & Swipe-to-Dismiss', () => 
 
         const { rerender } = render(<ProposalsList {...defaultProps} />);
         
-        expect(screen.getByText('1 of 2')).toBeDefined();
+        expect(screen.getByText('1 of 2 Entries')).toBeDefined();
 
         // Simulate casting a vote from the app layer
         (useProposals as any).mockReturnValue({
@@ -180,14 +180,14 @@ describe('ProposalsList Component — Tab Navigation & Swipe-to-Dismiss', () => 
         rerender(<ProposalsList {...defaultProps} />);
 
         // Now To Vote tab only has 1 proposal (prop-2)
-        expect(screen.getByText('1 of 1')).toBeDefined();
+        expect(screen.getByText('1 of 1 Entries')).toBeDefined();
         
         // The visible card in To Vote should now be prop-2
         expect(screen.getByText('Other Proposal in Same Category')).toBeDefined();
         expect(screen.queryByText('Test Proposal')).toBeNull();
 
         // Switch to My Votes tab
-        fireEvent.click(screen.getByText('My Votes'));
+        fireEvent.click(screen.getByText(/Personal Record/i));
 
         // The voted proposal should be here
         expect(screen.getByText('Test Proposal')).toBeDefined();
