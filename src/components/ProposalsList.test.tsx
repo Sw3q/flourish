@@ -120,6 +120,20 @@ describe('ProposalsList Component — Delegation Rendering', () => {
         // prop-2 (same category-1) should still render its Yes button
         expect(await screen.findByText(/Yes \(1\)/)).toBeDefined();
     });
+
+    it('disables per-proposal delegation when peer delegates globally to current user', async () => {
+        const circularProps = {
+            ...defaultProps,
+            members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: 'user-1', role: 'member' }],
+        };
+        render(<ProposalsList {...circularProps} />);
+
+        // The DelegationPill button should be disabled and have title "Delegates to you" and text "(Loop)"
+        const delegateBtn = await screen.findByText(/user2.*\(Loop\)/);
+        expect(delegateBtn).toBeDefined();
+        expect((delegateBtn as HTMLButtonElement).disabled).toBe(true);
+        expect(delegateBtn.getAttribute('title')).toBe('Delegates to you');
+    });
 });
 
 describe('ProposalsList Component — Tab Navigation & Swipe-to-Dismiss', () => {

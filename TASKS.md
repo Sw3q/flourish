@@ -3,11 +3,18 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
-- [ ] **Phase 36: Governance Refinement**
+- [ ] **Phase 40: Circular Delegation UI Blocker**
+    - [x] 1. Detect circular delegation (A delegates to B, B delegates to A).
+    - [x] 2. Implement UI blocker in `Dashboard.tsx` (Global Delegation).
+    - [x] 3. Implement UI blocker in `ProposalsList.tsx` (Per-proposal Delegation).
+    - [x] 4. Add unit test coverage in `Dashboard.test.tsx` and `ProposalsList.test.tsx`.
+- [ ] **Phase 38: Governance Audit**
     - [ ] 1. Explore global vs floor-specific voting power configurations for super_admins.
     - [ ] 2. Audit delegation override logic for edge cases in multi-floor scenarios.
 
 ## Completed Tasks History
+- **Phase 37 (Admin Isolation)**: Hardened RLS to restrict floor admins to their own domain and enhanced super admin dashboard with building-wide floor labels.
+- **Phase 36 (Magic Link Auth & Floor naming)**: Replaced passwords with dynamic magic link detection, fixed signup floor assignment, and renamed/reordered all 16 building floors.
 - **Phase 35 (Dashboard Layout Refinement)**: Eliminated whitespace by moving governance mechanisms into the main grid and positioning the launch button at the top.
 - **Phase 34 (Dashboard Refactoring)**: Condensed stats into a single-line header and improved information hierarchy in `Dashboard.tsx`.
 - **Phase 33 (Real Data Integration)**: Connected total balance, active proposals, and 30rd-day activity trends to Supabase data in `TowerDashboard.tsx`.

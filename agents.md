@@ -4,7 +4,7 @@ This document serves as the project-specific AI operating system for the Flouris
 
 ## 1. Project Overview & Core Mechanics
 The Flourish Fund is a React/Vite/TypeScript web application managing a communal pot for the "Human Flourishing Floor". 
-*   **Authentication**: Strict manual verification. Admin must approve new accounts before they can view or vote (`PendingApproval.tsx`).
+*   **Authentication**: Passwordless email-only Magic Link (OTP) authentication. Dynamic detection automatically distinguishes between new residents (enforced floor selection) and existing residents during login (`Login.tsx`). Admin approval required for full access (`PendingApproval.tsx`).
 *   **Proposals**: Communal spending requests with predefined categories and customizable expiration durations (minimum 3 days). Rendered via a Tinder-style swipeable card deck (`AdminDashboard.tsx`, `ProposalsList.tsx`).
 *   **Liquid Democracy**: Users vote Yes/No directly, or delegate power to another member (globally or per-category using `useDashboardData.ts`).
 *   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
@@ -14,7 +14,7 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 
 *   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features global activity visualizations and floor-by-floor treasury distributions. Individual floor dashboards are accessed via `/floor/:floorId`.
 *   **Global Sidebar**: A persistent, collapsible navigation sidebar is managed by `AuthLayout.tsx`, allowing for deep-floor access and search across the entire tower.
-*   **Multitenancy**: Data is scoped by `floor_id`. Approved users have read access to all floors for transparency but can only vote or perform admin actions on their primary assigned floor.
+*   **Multitenancy**: Data is scoped by `floor_id`. Approved users have read access to all floors for transparency. **Floor Admins** are restricted to managing members and categories on their primary floor; **Super Admins** have global oversight and cross-floor management capabilities.
 *   **Super Admin Role**: A `super_admin` role exists with global oversight and bypass capabilities for approval checks.
 
 ## 2. Tech Stack Ecosystem
@@ -42,7 +42,7 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Stale Proposal Cleanup**: Use the `evaluate_cleanup()` RPC function on frontend load to process proposals that have expired without reaching a conclusive state. Frontend hooks (`useProposals`, `useTowerStats`) must also implement current-time filtering safeguards for active counts.
 *   **Delegation Override**: Logic must ensure that direct votes cast by a user ALWAYS override any power they would have delegated. This applies to both the SQL `evaluate_proposal` logic and frontend `useProposals` weight calculations.
 *   **Vote Manipulation / DB Updates**: Vote toggling and `category_delegations` assignment must use explicit `.delete()` then `.insert()` commands. Avoid using `.update()` or `.upsert()` for junction tables missing formal serial primary keys, due to PostgREST silent failure bugs.
-*   **RLS Helpers**: Use `public.is_super_admin()` and `public.is_approved()` SECURITY DEFINER functions in RLS policies to avoid infinite recursion when querying the `profiles` table.
+*   **RLS Helpers**: Use `public.is_super_admin()`, `public.is_admin()`, and `public.is_approved()` SECURITY DEFINER functions in RLS policies to avoid infinite recursion when querying the `profiles` table. Standard admins must have their `floor_id` matched in RLS for update actions on that floor.
 *   **Hypercert Issuance**: Only users who contributed voting weight to a proposal (directly or via delegation) are permitted to issue its Hypercert. This is enforced via RLS and the `evaluate_proposal` logic.
 *   **Component Composition**: Highly specialized UI components (like `ProposalsList`) should expose control props (`hideHeader`, `isCreatingOverride`) to parent pages (`Dashboard.tsx`) to allow for context-specific layout overrides and state management.
 

@@ -88,6 +88,7 @@ export default function AuthLayout() {
             <Sidebar 
                 isOpen={isSidebarOpen} 
                 onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
+                userEmail={session?.user?.email}
             />
             
             <main className={cn(

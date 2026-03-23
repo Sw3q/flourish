@@ -3,13 +3,15 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 38: Governance Audit**: Perform a deep audit of the new proposal editing and chat mechanisms in multi-floor scenarios.
+- **Phase 40: Circular Delegation UI Blocker**: Add UI blocker to prevent users from delegating to peers who are already delegating back to them, avoiding circular delegation loops.
 
 ## Upcoming Objectives
 - **Phase 39: Impact Visualization**: Enhance Hypercert displays and cross-floor impact tracking metrics.
 
 ## Completed Plans History
 - **Phase 37 (Proposal Enhancements)**: Implemented proposal editing for authors and a dedicated chat/comment interface for each proposal instance.
+- **Phase 37 (Admin Isolation)**: Hardened RLS to restrict floor admins to their own domain and enhanced super admin dashboard with building-wide floor labels.
+- **Phase 36 (Magic Link Auth & Floor naming)**: Replaced passwords with dynamic magic link detection, fixed signup floor assignment, and renamed/reordered all 16 building floors.
 - **Phase 35 (Dashboard Layout Refinement)**: Optimized dashboard grid layout to eliminate whitespace and balance governance vs. identity modules.
 - **Phase 34 (Dashboard Refactoring)**: Implemented condensed, high-density header for floor metrics in `Dashboard.tsx`.
 - **Phase 33 (Real Data Integration)**: Connected dashboard metrics and activity trends to live Supabase data.

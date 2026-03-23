@@ -223,17 +223,27 @@ export default function Dashboard() {
                                     {members.length === 0 ? (
                                         <div className="py-12 text-center text-slate-400 font-medium text-xs uppercase tracking-widest">No active peers found.</div>
                                     ) : (
-                                        members.map(member => (
+                                        members.map(member => {
+                                            const isCircular = member.delegated_to === currentUser?.id;
+                                            return (
                                             <button
                                                 key={member.id}
-                                                onClick={() => handleDelegate(member.id)}
-                                                disabled={!isCurrentFloor}
-                                                className="w-full text-left p-5 bg-white border border-slate-100 rounded-2xl hover:border-primary-200 transition-all flex items-center justify-between group/btn disabled:opacity-40"
+                                                onClick={() => !isCircular && handleDelegate(member.id)}
+                                                disabled={!isCurrentFloor || isCircular}
+                                                className={`w-full text-left p-5 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group/btn transition-all ${
+                                                    isCircular 
+                                                    ? 'opacity-50 border-red-200 cursor-not-allowed' 
+                                                    : 'hover:border-primary-200 disabled:opacity-40'
+                                                }`}
+                                                title={isCircular ? "This user is already delegating to you. Circular delegation is not allowed." : ""}
                                             >
-                                                <span className="font-bold text-slate-700 text-sm">{member.email.split('@')[0]}</span>
-                                                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover/btn:text-primary-600 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-all" />
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-700 text-sm">{member.email.split('@')[0]}</span>
+                                                    {isCircular && <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-1">Delegates to you</span>}
+                                                </div>
+                                                {!isCircular && <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover/btn:text-primary-600 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-all" />}
                                             </button>
-                                        ))
+                                        )})
                                     )}
                                 </div>
                             )}

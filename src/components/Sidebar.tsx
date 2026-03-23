@@ -20,9 +20,10 @@ import { cn } from '../lib/utils'; // Assuming a cn utility exists or I'll use t
 interface SidebarProps {
     isOpen: boolean;
     onToggle: () => void;
+    userEmail?: string;
 }
 
-export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
     const navigate = useNavigate();
     const { floorId } = useParams();
     const floors = useFloors();
@@ -175,7 +176,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     </div>
                     {isOpen && (
                         <div className="flex-1 min-w-0">
-                            <div className="text-xs font-black text-slate-900 truncate">Resident Profile</div>
+                            <div className="text-xs font-black text-slate-900 truncate">{userEmail || 'Resident Profile'}</div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">Approved Member</div>
                         </div>
                     )}

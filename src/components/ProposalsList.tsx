@@ -139,11 +139,13 @@ function ConvictionStatus({ quorumReachedAt }: { quorumReachedAt: string | null 
 // ─────────────────────────────────────────────────────────────────────────────
 function DelegationPills({
     proposalId,
+    currentUserId,
     members,
     proposalDelegations,
     onDelegateProposal,
 }: {
     proposalId: string;
+    currentUserId: string;
     members: Profile[];
     proposalDelegations: Record<string, string>;
     onDelegateProposal: (proposalId: string, targetId: string | null) => Promise<boolean>;
@@ -167,16 +169,21 @@ function DelegationPills({
                 {members.map(member => {
                     const name = member.email.split('@')[0];
                     const isActive = activeDelegateId === member.id;
+                    const isCircular = member.delegated_to === currentUserId;
                     return (
                         <button
                             key={member.id}
-                            onClick={() => handleClick(member.id)}
+                            onClick={() => !isCircular && handleClick(member.id)}
+                            disabled={isCircular}
                             className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight transition-all border ${isActive
                                 ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-600/20'
+                                : isCircular
+                                ? 'bg-slate-50 text-slate-400 border-red-200 opacity-50 cursor-not-allowed'
                                 : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary-400 hover:text-primary-600 hover:bg-white'
                                 }`}
+                            title={isCircular ? "Delegates to you" : ""}
                         >
-                            {name}
+                            {name} {isCircular ? " (Loop)" : ""}
                         </button>
                     );
                 })}
@@ -511,6 +518,7 @@ export default function ProposalsList({
 
                             <DelegationPills
                                 proposalId={proposal.id}
+                                currentUserId={currentUserId}
                                 members={members}
                                 proposalDelegations={proposalDelegations}
                                 onDelegateProposal={onDelegateProposal}

@@ -79,4 +79,41 @@ describe('Dashboard', () => {
 
         expect(screen.getByText(/Launch New Proposal/i)).toBeDefined();
     });
+
+    it('disables delegation button for members who delegate to current user', () => {
+        (useDashboardDataHook.useDashboardData as any).mockReturnValue({
+            currentUser: mockUser,
+            members: [
+                { id: 'user-abc', email: 'normal@test.com', delegated_to: null, role: 'member' },
+                { id: 'user-xyz', email: 'circular@test.com', delegated_to: 'user-123', role: 'member' },
+            ],
+            votingPower: 100,
+            fundBalance: 5000,
+            monthlyBurnRate: 1500,
+            loading: false,
+            proposalDelegations: {},
+            updateAtProtoCredentials: vi.fn(),
+            delegateVote: vi.fn(),
+            delegateVoteForProposal: vi.fn(),
+            getVotingPower: vi.fn(),
+            refreshData: vi.fn(),
+            floorName: 'Test Floor',
+        });
+
+        render(
+            <MemoryRouter>
+                <Dashboard />
+            </MemoryRouter>
+        );
+
+        const normalBtn = screen.getByText('normal').closest('button');
+        expect(normalBtn).toBeDefined();
+        expect(normalBtn).not.toHaveProperty('disabled', true);
+
+        const circularBtn = screen.getByText('circular').closest('button');
+        expect(circularBtn).toBeDefined();
+        expect(screen.getByText('Delegates to you')).toBeDefined();
+        expect(circularBtn).toHaveProperty('title', 'This user is already delegating to you. Circular delegation is not allowed.');
+        expect(circularBtn).toHaveProperty('disabled', true);
+    });
 });
