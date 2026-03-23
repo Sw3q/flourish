@@ -24,9 +24,9 @@ describe('Login Component', () => {
         vi.clearAllMocks();
     });
 
-    it('should call signInWithPassword and redirect to / on successful login', async () => {
+    it('should call signInWithOtp and show success message', async () => {
         // Setup mock to succeed
-        (supabase.auth.signInWithPassword as any).mockResolvedValueOnce({ data: {}, error: null });
+        (supabase.auth.signInWithOtp as any).mockResolvedValueOnce({ data: {}, error: null });
 
         render(
             <MemoryRouter>
@@ -34,21 +34,21 @@ describe('Login Component', () => {
             </MemoryRouter>
         );
 
+        // Wait for check existence debounce to clear
+        await waitFor(() => expect(screen.queryByRole('button', { name: /sign in/i })).toBeDefined());
+
         const emailInput = screen.getByPlaceholderText('you@frontier.com');
-        const passwordInput = screen.getByPlaceholderText('••••••••');
         const submitBtn = screen.getByRole('button', { name: /sign in/i });
 
         fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitBtn);
 
         await waitFor(() => {
-            expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+            expect(supabase.auth.signInWithOtp).toHaveBeenCalledWith({
                 email: 'test@example.com',
-                password: 'password123',
+                options: expect.anything()
             });
-            // The bug: it wasn't navigating. We test that it should navigate.
-            expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+            expect(screen.getByText(/Check your email for the magic link!/i)).toBeDefined();
         });
     });
 });

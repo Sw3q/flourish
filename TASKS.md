@@ -3,6 +3,12 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
+- [ ] **Phase 41: Brand Kit Overhaul & Re-styling**
+    - [ ] 1. Update `src/index.css` with the new Frontier Violet color palette.
+    - [ ] 2. Create placeholder logo files in `src/assets` to be replaced by the user.
+    - [ ] 3. Replace existing text/SVG logos in layout components with image tags for the new brand logos.
+    - [ ] 4. Ensure UI components align well with the new styling.
+    - [ ] 5. Write/update unit tests for modified components.
 - [ ] **Phase 40: Circular Delegation UI Blocker**
     - [x] 1. Detect circular delegation (A delegates to B, B delegates to A).
     - [x] 2. Implement UI blocker in `Dashboard.tsx` (Global Delegation).

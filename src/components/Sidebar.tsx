@@ -1,7 +1,6 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
     LayoutDashboard,
-    Building2,
     LogOut,
     ChevronRight,
     Search,
@@ -47,18 +46,10 @@ export default function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
             {/* Brand Header */}
             <div className="p-5 border-b border-slate-50 flex items-center justify-between min-w-[320px]">
                 <Link to="/building" className={cn(
-                    "flex items-center gap-3 group transition-opacity duration-300",
+                    "flexアイテムs-center gap-3 group transition-opacity duration-300",
                     !isOpen && "opacity-0 pointer-events-none"
                 )}>
-                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500">
-                        <Building2 className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="font-display font-extrabold text-xl tracking-tight text-slate-900 leading-tight">
-                            Frontier <span className="text-primary-600">Fund</span>
-                        </h1>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vertical OS</p>
-                    </div>
+                    <img src="/src/assets/logo-primary.svg" alt="Frontier Tower" className="h-10 w-auto transition-transform group-hover:scale-105 duration-500" />
                 </Link>
                 <button
                     onClick={onToggle}

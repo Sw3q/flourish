@@ -3,6 +3,7 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
+- **Phase 41: Brand Kit Overhaul & Re-styling**: Update the UI styling and elements to match the existing Frontier Tower brand kit, replacing the current color palette with the new Frontier Violet and creating image placeholders for the new logos in `src/assets`.
 - **Phase 40: Circular Delegation UI Blocker**: Add UI blocker to prevent users from delegating to peers who are already delegating back to them, avoiding circular delegation loops.
 
 ## Upcoming Objectives

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, ArrowRight, HeartHandshake } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { CONFIG } from '../config';
 import { useFloors } from '../hooks/useFloors';
 
@@ -80,14 +80,14 @@ export default function Login() {
             <div className="w-full max-w-md relative z-10">
                 <div className="glass rounded-3xl p-8 shadow-2xl">
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-tr from-primary-500 to-accent-400 rounded-2xl mx-auto flex items-center justify-center transform rotate-3 shadow-lg mb-6">
-                            <HeartHandshake className="w-8 h-8 text-white transform -rotate-3" />
+                        <div className="w-20 h-20 mx-auto flex items-center justify-center transform rotate-3 shadow-2xl mb-6 transition-transform hover:rotate-0 duration-500">
+                            <img src="/src/assets/logo-icon.svg" alt="Frontier Tower Icon" className="w-full h-full object-contain drop-shadow-md" />
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                            Flourish Fund
+                        <h1 className="text-3xl font-display font-extrabold text-slate-900 tracking-tight">
+                            Frontier Tower
                         </h1>
-                        <p className="text-sm text-slate-500 mt-2">
-                            Grassroots governance for our communal pot.
+                        <p className="text-sm text-slate-500 mt-2 font-medium">
+                            The Inter-city Network State.
                         </p>
                     </div>
 

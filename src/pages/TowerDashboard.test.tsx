@@ -28,6 +28,8 @@ describe('TowerDashboard Component', () => {
             totalBalance: 0,
             totalActiveProposals: 0,
             totalMembers: 0,
+            activityTrend: [],
+            governanceIntensity: 1,
             loading: true,
         });
 
@@ -48,6 +50,8 @@ describe('TowerDashboard Component', () => {
             totalBalance: 1234.56,
             totalActiveProposals: 2,
             totalMembers: 5,
+            activityTrend: [],
+            governanceIntensity: 1,
             loading: false,
         });
 

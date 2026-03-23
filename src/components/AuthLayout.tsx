@@ -17,7 +17,7 @@ export default function AuthLayout() {
 
     useEffect(() => {
         if (CONFIG.BYPASS_AUTH) {
-            setSession({ user: { id: '00000000-0000-0000-0000-000000000000', email: 'demo@flourish.test' } });
+            setSession({ user: { id: '00000000-0000-0000-0000-000000000000', email: 'demo@frontiertower.test' } });
             setIsApproved(true);
             setIsAdmin(true);
             setUserRole('super_admin');

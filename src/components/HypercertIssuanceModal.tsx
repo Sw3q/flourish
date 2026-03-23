@@ -34,7 +34,7 @@ export default function HypercertIssuanceModal({ proposal, onClose, onSuccess }:
             {
                 title: proposal.title,
                 description: proposal.description,
-                shortDescription: `Flourish Fund impact: ${proposal.amount} for ${proposal.categories?.name}`,
+                shortDescription: `Frontier Tower impact: ${proposal.amount} for ${proposal.categories?.name}`,
                 createdAt: new Date().toISOString(),
             }
         );

@@ -1,5 +1,5 @@
 /**
- * Global configuration for the Flourish Fund application.
+ * Global configuration for the Frontier Tower application.
  */
 export const CONFIG = {
     /**

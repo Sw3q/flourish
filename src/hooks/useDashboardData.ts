@@ -30,7 +30,7 @@ export function useDashboardData(floorIdOverride?: string | null) {
     const fetchDashboardData = async () => {
         let user;
         if (CONFIG.BYPASS_AUTH) {
-            user = { id: '00000000-0000-0000-0000-000000000001', email: 'demo@flourish.test' };
+            user = { id: '00000000-0000-0000-0000-000000000001', email: 'demo@frontiertower.test' };
         } else {
             const { data } = await supabase.auth.getUser();
             user = data.user;
