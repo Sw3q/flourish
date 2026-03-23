@@ -192,13 +192,10 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         if (user.role === 'super_admin') nextRole = 'admin';
         if (user.role === 'member') return false;
 
-        const { error, count } = await supabase
+        const { error } = await supabase
             .from('profiles')
             .update({ role: nextRole })
-            .eq('id', userId)
-            .select();
-
-        console.log('Demote attempt:', { userId, nextRole, error, count });
+            .eq('id', userId);
 
         if (!error) {
             setUsers(users.map((u: Profile) => u.id === userId ? { ...u, role: nextRole } : u));
