@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { CONFIG } from '../config';
 import { useFloors } from '../hooks/useFloors';
+import logoIcon from '../assets/logo-icon.svg';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -81,7 +82,7 @@ export default function Login() {
                 <div className="glass rounded-3xl p-8 shadow-2xl">
                     <div className="text-center mb-8">
                         <div className="w-20 h-20 mx-auto flex items-center justify-center transform rotate-3 shadow-2xl mb-6 transition-transform hover:rotate-0 duration-500">
-                            <img src="/src/assets/logo-icon.svg" alt="Frontier Tower Icon" className="w-full h-full object-contain drop-shadow-md" />
+                            <img src={logoIcon} alt="Frontier Tower Icon" className="w-full h-full object-contain drop-shadow-md" />
                         </div>
                         <h1 className="text-3xl font-display font-extrabold text-slate-900 tracking-tight">
                             Frontier Tower

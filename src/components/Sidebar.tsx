@@ -9,8 +9,9 @@ import {
     Layers,
     PanelLeftClose,
     PanelLeftOpen,
-    ArrowLeftRight
+    ArrowLeftRight,
 } from 'lucide-react';
+import logoPrimary from '../assets/logo-primary.svg';
 import { useFloors } from '../hooks/useFloors';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
@@ -46,10 +47,10 @@ export default function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
             {/* Brand Header */}
             <div className="p-5 border-b border-slate-50 flex items-center justify-between min-w-[320px]">
                 <Link to="/building" className={cn(
-                    "flexアイテムs-center gap-3 group transition-opacity duration-300",
+                    "flex items-center gap-3 group transition-opacity duration-300",
                     !isOpen && "opacity-0 pointer-events-none"
                 )}>
-                    <img src="/src/assets/logo-primary.svg" alt="Frontier Tower" className="h-10 w-auto transition-transform group-hover:scale-105 duration-500" />
+                    <img src={logoPrimary} alt="Frontier Tower" className="h-10 w-auto transition-transform group-hover:scale-105 duration-500" />
                 </Link>
                 <button
                     onClick={onToggle}
