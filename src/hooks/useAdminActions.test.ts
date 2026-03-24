@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { useAdminActions } from './useAdminActions';
+import { useAdminActions, getNextBillingDate } from './useAdminActions';
 import { supabase } from '../lib/supabase';
 
 const createBulletproofMock = (data: any = [], count: number = 0) => {
@@ -197,13 +197,18 @@ describe('useAdminActions Hook', () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
 
+        const mockEqUpdate = vi.fn().mockResolvedValue({ error: null });
+        const mockUpdate = vi.fn().mockReturnValue({ eq: mockEqUpdate });
         const mockInsert = vi.fn().mockResolvedValue({ error: null });
-        const mockSelectReturn: any = { eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) };
-        (supabase.from as any).mockReturnValue({ insert: mockInsert, select: () => mockSelectReturn });
+        (supabase.from as any).mockReturnValue({
+            insert: mockInsert,
+            update: mockUpdate,
+            select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }),
+        });
 
         let success;
         await act(async () => {
-            success = await result.current.processRecurringExpense({ id: 'exp1', title: 'Test', amount: 30, category_id: 'cat1', is_active: true, created_at: '' });
+            success = await result.current.processRecurringExpense({ id: 'exp1', title: 'Test', amount: 30, category_id: 'cat1', is_active: true, created_at: '', recurrence_interval: 'monthly' });
         });
 
         expect(success).toBe(true);
@@ -345,4 +350,94 @@ describe('useAdminActions Hook', () => {
         expect(mockUpdate).toHaveBeenCalledWith({ role: 'member' });
         expect(result.current.users[0].role).toBe('member');
     });
+
+    it('should setBalance by inserting a deposit transaction for the delta', async () => {
+        (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
+        const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
+
+        const mockInsert = vi.fn().mockResolvedValueOnce({ error: null });
+        (supabase.from as any).mockReturnValue({ insert: mockInsert, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
+
+        let success;
+        await act(async () => {
+            // Raise balance from 500 to 800 → should insert deposit of 300
+            success = await result.current.setBalance(800, 500);
+        });
+
+        expect(success).toBe(null);
+        expect(mockInsert).toHaveBeenCalledWith([
+            { amount: 300, type: 'deposit', description: 'Admin Balance Adjustment (deposit)', floor_id: 'floor1' }
+        ]);
+        expect(result.current.fundBalance).toBe(800);
+    });
+
+    it('should setBalance by inserting a withdrawal for a negative delta', async () => {
+        (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
+        const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
+
+        const mockInsert = vi.fn().mockResolvedValueOnce({ error: null });
+        (supabase.from as any).mockReturnValue({ insert: mockInsert, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
+
+        let success;
+        await act(async () => {
+            // Lower balance from 1000 to 600 → should insert withdrawal of 400
+            success = await result.current.setBalance(600, 1000);
+        });
+
+        expect(success).toBe(null);
+        expect(mockInsert).toHaveBeenCalledWith([
+            { amount: 400, type: 'withdrawal', description: 'Admin Balance Adjustment (withdrawal)', floor_id: 'floor1' }
+        ]);
+        expect(result.current.fundBalance).toBe(600);
+    });
 });
+
+describe('getNextBillingDate utility', () => {
+    it('returns created_at + 1 month when interval is monthly and last_processed_at is null', () => {
+        const created = new Date('2026-01-01T00:00:00Z');
+        const expense: any = {
+            id: '1', title: 'Test', amount: 100, category_id: 'cat1',
+            is_active: true, created_at: created.toISOString(), last_processed_at: null,
+            recurrence_interval: 'monthly'
+        };
+        const next = getNextBillingDate(expense);
+        expect(next.getUTCMonth()).toBe(1); // Feb
+        expect(next.getUTCDate()).toBe(1);
+    });
+
+    it('returns base + 7 days when interval is weekly', () => {
+        const created = new Date('2026-01-01T00:00:00Z');
+        const expense: any = {
+            id: '1', title: 'Test', amount: 100, category_id: 'cat1',
+            is_active: true, created_at: created.toISOString(), last_processed_at: null,
+            recurrence_interval: 'weekly'
+        };
+        const next = getNextBillingDate(expense);
+        expect(next.getUTCDate()).toBe(8);
+    });
+
+    it('returns base + 1 year when interval is yearly', () => {
+        const created = new Date('2026-01-01T00:00:00Z');
+        const expense: any = {
+            id: '1', title: 'Test', amount: 100, category_id: 'cat1',
+            is_active: true, created_at: created.toISOString(), last_processed_at: null,
+            recurrence_interval: 'yearly'
+        };
+        const next = getNextBillingDate(expense);
+        expect(next.getUTCFullYear()).toBe(2027);
+    });
+
+    it('respects last_processed_at when computing next date', () => {
+        const processed = new Date('2026-02-15T00:00:00Z');
+        const expense: any = {
+            id: '1', title: 'Test', amount: 100, category_id: 'cat1',
+            is_active: true, created_at: '2026-01-01T00:00:00Z', 
+            last_processed_at: processed.toISOString(),
+            recurrence_interval: 'monthly'
+        };
+        const next = getNextBillingDate(expense);
+        expect(next.getUTCMonth()).toBe(2); // March
+        expect(next.getUTCDate()).toBe(15);
+    });
+});
+

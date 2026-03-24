@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Check, X, ShieldAlert, UserCheck, Shield, ShieldOff } from 'lucide-react';
-import { useAdminActions, type RecurringExpense } from '../hooks/useAdminActions';
+import { Check, X, ShieldAlert, UserCheck, Shield, ShieldOff, Calendar } from 'lucide-react';
+import { useAdminActions, getNextBillingDate, type RecurringExpense } from '../hooks/useAdminActions';
 
 const getThemeClass = (theme: string) => {
     const classes: Record<string, string> = {
@@ -14,6 +14,10 @@ const getThemeClass = (theme: string) => {
     return classes[theme] || classes.blue;
 };
 
+function formatBillingDate(date: Date): string {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function AdminDashboard() {
     const { currentFloorId, userRole } = useOutletContext<{ currentFloorId: string | null; userRole: string }>();
 
@@ -25,7 +29,7 @@ export default function AdminDashboard() {
         loading,
         isAdmin,
         createCategory,
-        addFunds,
+        setBalance,
         approveUser,
         revokeUser,
         promoteUser,
@@ -33,77 +37,91 @@ export default function AdminDashboard() {
         createRecurringExpense,
         toggleRecurringExpense,
         updateRecurringExpense,
-        processRecurringExpense,
     } = useAdminActions(currentFloorId, userRole);
 
     // Form states
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState('blue');
-    const [depositAmount, setDepositAmount] = useState('');
     const [newExpenseTitle, setNewExpenseTitle] = useState('');
     const [newExpenseAmount, setNewExpenseAmount] = useState('');
     const [newExpenseCategory, setNewExpenseCategory] = useState('');
+    const [newExpenseInterval, setNewExpenseInterval] = useState('monthly');
+
+    // Inline balance editing
+    const [balanceInput, setBalanceInput] = useState<string>('');
+    const [balanceError, setBalanceError] = useState<string | null>(null);
 
     // Edit recurring expense states
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     const [editExpenseTitle, setEditExpenseTitle] = useState('');
     const [editExpenseAmount, setEditExpenseAmount] = useState('');
     const [editExpenseCategory, setEditExpenseCategory] = useState('');
+    const [editExpenseInterval, setEditExpenseInterval] = useState('monthly');
+    const [recurringError, setRecurringError] = useState<string | null>(null);
 
     const handleCreateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
         const success = await createCategory(newCategoryName, newCategoryColor);
-        if (success) {
-            setNewCategoryName('');
-        }
+        if (success) setNewCategoryName('');
     };
 
-    const handleAddFunds = async (e: React.FormEvent) => {
+    const handleBalanceSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        const success = await addFunds(Number(depositAmount));
-        if (success) {
-            setDepositAmount('');
+        setBalanceError(null);
+        const target = parseFloat(balanceInput);
+        if (!isNaN(target) && target !== fundBalance) {
+            const err = await setBalance(target, fundBalance);
+            if (err) {
+                setBalanceError(err);
+                return;
+            }
         }
+        setBalanceInput('');
     };
 
     const handleCreateExpense = async (e: React.FormEvent) => {
         e.preventDefault();
-        const success = await createRecurringExpense(newExpenseTitle, Number(newExpenseAmount), newExpenseCategory);
+        setRecurringError(null);
+        const success = await createRecurringExpense(newExpenseTitle, Number(newExpenseAmount), newExpenseCategory, newExpenseInterval);
         if (success) {
             setNewExpenseTitle('');
             setNewExpenseAmount('');
             setNewExpenseCategory('');
+            setNewExpenseInterval('monthly');
+        } else {
+            setRecurringError('Failed to create expense. Check permissions.');
         }
     };
 
-    const handleApprove = async (userId: string) => {
-        await approveUser(userId);
-    };
-
-    const handleRevoke = async (userId: string) => {
-        await revokeUser(userId);
-    };
-
-    const handlePromote = async (userId: string) => {
-        await promoteUser(userId);
-    };
-    
-    const handleDemote = async (userId: string) => {
-        await demoteUser(userId);
-    };
+    const handleApprove = async (userId: string) => { await approveUser(userId); };
+    const handleRevoke = async (userId: string) => { await revokeUser(userId); };
+    const handlePromote = async (userId: string) => { await promoteUser(userId); };
+    const handleDemote = async (userId: string) => { await demoteUser(userId); };
 
     const startEditExpense = (expense: RecurringExpense) => {
         setEditingExpenseId(expense.id);
         setEditExpenseTitle(expense.title);
         setEditExpenseAmount(expense.amount.toString());
         setEditExpenseCategory(expense.category_id);
+        setEditExpenseInterval(expense.recurrence_interval || 'monthly');
     };
 
     const handleUpdateExpense = async (e: React.FormEvent, expenseId: string) => {
         e.preventDefault();
-        const success = await updateRecurringExpense(expenseId, editExpenseTitle, Number(editExpenseAmount), editExpenseCategory);
+        setRecurringError(null);
+        const success = await updateRecurringExpense(expenseId, editExpenseTitle, Number(editExpenseAmount), editExpenseCategory, editExpenseInterval);
         if (success) {
             setEditingExpenseId(null);
+        } else {
+            setRecurringError('Failed to update expense. Check permissions.');
+        }
+    };
+
+    const handleToggleExpense = async (expenseId: string, isActive: boolean) => {
+        setRecurringError(null);
+        const success = await toggleRecurringExpense(expenseId, isActive);
+        if (!success) {
+            setRecurringError('Failed to update status.');
         }
     };
 
@@ -238,31 +256,31 @@ export default function AdminDashboard() {
             <div className="grid md:grid-cols-2 gap-8">
                 <section>
                     <h2 className="text-lg font-semibold text-slate-900 mb-4">Pot Balance</h2>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-4">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div className="text-sm text-slate-500 mb-1">Current Virtual Balance</div>
-                        <div className="text-4xl font-bold text-success-400">${fundBalance.toFixed(2)}</div>
-                    </div>
-
-                    <form onSubmit={handleAddFunds} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex gap-4">
-                        <div className="flex-1">
-                            <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Add Monthly Funds</label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-3 text-slate-400">$</span>
+                        <div className="text-4xl font-bold text-success-400 mb-4">${fundBalance.toFixed(2)}</div>
+                        <form onSubmit={handleBalanceSave} className="flex gap-3">
+                            <div className="relative flex-1">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                                 <input
                                     type="number"
-                                    min="0"
                                     step="0.01"
-                                    value={depositAmount}
-                                    onChange={(e) => setDepositAmount(e.target.value)}
-                                    className="w-full pl-8 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                                    placeholder="200.00"
+                                    min="0"
+                                    value={balanceInput}
+                                    onChange={e => setBalanceInput(e.target.value)}
+                                    placeholder={fundBalance.toFixed(2)}
+                                    className={`w-full pl-8 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${balanceError ? 'border-red-300' : 'border-slate-200'}`}
                                 />
                             </div>
-                        </div>
-                        <button type="submit" className="self-end px-6 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
-                            Deposit
-                        </button>
-                    </form>
+                            <button type="submit" disabled={!balanceInput} className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-40">
+                                Set Balance
+                            </button>
+                        </form>
+                        {balanceError && (
+                            <p className="mt-2 text-xs text-red-500 font-medium">{balanceError}</p>
+                        )}
+                    </div>
+
                 </section>
 
                 <section>
@@ -314,10 +332,18 @@ export default function AdminDashboard() {
             </div>
 
             <section>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    Manage Recurring Expenses
-                </h2>
+                <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                        Manage Recurring Expenses
+                    </h2>
+                    {recurringError && (
+                        <span className="text-xs text-red-500 font-medium animate-in fade-in slide-in-from-right-4">
+                            {recurringError}
+                        </span>
+                    )}
+                </div>
+                <p className="text-xs text-slate-400 mb-4 ml-4">Payments are processed automatically each month on their billing date.</p>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-4">
                     {(!recurringExpenses || recurringExpenses.length === 0) ? (
@@ -352,10 +378,20 @@ export default function AdminDashboard() {
                                             <select
                                                 value={editExpenseCategory}
                                                 onChange={(e: any) => setEditExpenseCategory(e.target.value)}
-                                                className="w-full xl:w-48 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 outline-none"
+                                                className="w-full xl:w-40 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 outline-none"
                                                 required
                                             >
                                                 {categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                            </select>
+                                            <select
+                                                value={editExpenseInterval}
+                                                onChange={(e: any) => setEditExpenseInterval(e.target.value)}
+                                                className="w-full xl:w-32 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 outline-none font-medium"
+                                                required
+                                            >
+                                                <option value="weekly">Weekly</option>
+                                                <option value="monthly">Monthly</option>
+                                                <option value="yearly">Yearly</option>
                                             </select>
                                             <div className="flex gap-2 w-full xl:w-auto mt-2 xl:mt-0">
                                                 <button type="button" onClick={() => setEditingExpenseId(null)} className="flex-1 xl:flex-none px-3 py-1.5 text-sm font-medium border border-slate-200 rounded-lg hover:bg-white text-slate-600 transition-colors">Cancel</button>
@@ -371,8 +407,14 @@ export default function AdminDashboard() {
                                                         {exp.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </div>
-                                                <div className="text-sm text-slate-500 mt-1">
-                                                    ${Number(exp.amount).toFixed(2)} / mo • {exp.categories?.name}
+                                                <div className="text-sm text-slate-500 mt-1 flex items-center gap-3">
+                                                    <span>${Number(exp.amount).toFixed(2)} / {exp.recurrence_interval || 'mo'} • {exp.categories?.name}</span>
+                                                    {exp.is_active && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                                                            <Calendar className="w-3 h-3" />
+                                                            Next: {formatBillingDate(getNextBillingDate(exp))}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -383,17 +425,10 @@ export default function AdminDashboard() {
                                                     Edit
                                                 </button>
                                                 <button
-                                                    onClick={() => toggleRecurringExpense(exp.id, !exp.is_active)}
+                                                    onClick={() => handleToggleExpense(exp.id, !exp.is_active)}
                                                     className="px-3 py-1.5 text-sm font-medium border border-slate-200 rounded-lg hover:bg-white text-slate-600 transition-colors"
                                                 >
                                                     {exp.is_active ? 'Disable' : 'Enable'}
-                                                </button>
-                                                <button
-                                                    onClick={() => processRecurringExpense(exp)}
-                                                    disabled={!exp.is_active}
-                                                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${exp.is_active ? 'bg-primary-50 text-primary-700 hover:bg-primary-100' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
-                                                >
-                                                    Process Payment
                                                 </button>
                                             </div>
                                         </div>
@@ -430,12 +465,21 @@ export default function AdminDashboard() {
                         <select
                             value={newExpenseCategory}
                             onChange={(e: any) => setNewExpenseCategory(e.target.value)}
-                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl outline-none bg-white"
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl outline-none bg-white font-medium"
                         >
                             <option value="" disabled>Select Category</option>
                             {categories.map((cat: any) => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
+                        </select>
+                        <select
+                            value={newExpenseInterval}
+                            onChange={(e: any) => setNewExpenseInterval(e.target.value)}
+                            className="w-32 px-4 py-2 border border-slate-200 rounded-xl outline-none bg-white font-medium"
+                        >
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
                         </select>
                         <button type="submit" disabled={!newExpenseCategory} className="px-6 py-2 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors disabled:bg-primary-300 disabled:cursor-not-allowed">
                             Add

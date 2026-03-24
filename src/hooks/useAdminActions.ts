@@ -28,14 +28,48 @@ export type RecurringExpense = {
     floor_id?: string;
     is_active: boolean;
     created_at: string;
+    last_processed_at?: string | null;
+    recurrence_interval: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
     categories?: { name: string; color_theme: string };
 };
+
+/** Returns the next billing date for an expense based on its recurrence_interval. */
+export function getNextBillingDate(expense: RecurringExpense): Date {
+    const base = expense.last_processed_at
+        ? new Date(expense.last_processed_at)
+        : new Date(expense.created_at);
+    const next = new Date(base);
+
+    switch (expense.recurrence_interval) {
+        case 'daily':
+            next.setUTCDate(next.getUTCDate() + 1);
+            break;
+        case 'weekly':
+            next.setUTCDate(next.getUTCDate() + 7);
+            break;
+        case 'biweekly':
+            next.setUTCDate(next.getUTCDate() + 14);
+            break;
+        case 'monthly':
+            next.setUTCMonth(next.getUTCMonth() + 1);
+            break;
+        case 'quarterly':
+            next.setUTCMonth(next.getUTCMonth() + 3);
+            break;
+        case 'yearly':
+            next.setUTCFullYear(next.getUTCFullYear() + 1);
+            break;
+        default:
+            next.setUTCMonth(next.getUTCMonth() + 1);
+    }
+    return next;
+}
 
 export function useAdminActions(currentFloorId: string | null, currentUserRole?: string) {
     const [users, setUsers] = useState<Profile[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
-    const [fundBalance, setFundBalance] = useState<number>(0);
+    const [fundBalance, setFundBalanceState] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
@@ -51,15 +85,19 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         if (data) setCategories(data as Category[]);
     };
 
-    const fetchRecurringExpenses = async () => {
+    const fetchRecurringExpenses = async (): Promise<RecurringExpense[]> => {
         let q = supabase.from('recurring_expenses').select('*, categories(name, color_theme)').order('created_at', { ascending: false });
         if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
 
         const { data } = await q;
-        if (data) setRecurringExpenses(data as RecurringExpense[]);
+        if (data) {
+            setRecurringExpenses(data as RecurringExpense[]);
+            return data as RecurringExpense[];
+        }
+        return [];
     };
 
-    const fetchFundBalance = async () => {
+    const fetchFundBalance = async (): Promise<number> => {
         let q = supabase.from('transactions').select('amount, type');
         if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
 
@@ -68,8 +106,10 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
             const balance = data.reduce((acc: number, curr: any) => {
                 return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
             }, 0);
-            setFundBalance(balance);
+            setFundBalanceState(balance);
+            return balance;
         }
+        return 0;
     };
 
     const fetchUsers = async () => {
@@ -81,10 +121,50 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         setLoading(false);
     };
 
+    /** Auto-process any active recurring expenses whose next billing date has passed. */
+    const autoProcessDueExpenses = async (expenses: RecurringExpense[], balance: number) => {
+        const now = new Date();
+        const due = expenses.filter(e => e.is_active && getNextBillingDate(e) <= now);
+        if (due.length === 0) return;
+
+        let runningBalance = balance;
+        for (const expense of due) {
+            const transFloorId = expense.floor_id || currentFloorId;
+            const { error: txError } = await supabase
+                .from('transactions')
+                .insert([{
+                    amount: expense.amount,
+                    type: 'withdrawal',
+                    description: `Auto Recurring: ${expense.title}`,
+                    floor_id: transFloorId,
+                }]);
+
+            if (!txError) {
+                const nowIso = now.toISOString();
+                await supabase
+                    .from('recurring_expenses')
+                    .update({ last_processed_at: nowIso })
+                    .eq('id', expense.id);
+
+                runningBalance -= expense.amount;
+                setRecurringExpenses(prev =>
+                    prev.map(e => e.id === expense.id ? { ...e, last_processed_at: nowIso } : e)
+                );
+            }
+        }
+        setFundBalanceState(runningBalance);
+    };
+
     const checkAdminStatus = async () => {
         if (CONFIG.BYPASS_AUTH) {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
+            const [expenses, balance] = await Promise.all([
+                fetchRecurringExpenses(),
+                fetchFundBalance(),
+                fetchUsers(),
+                fetchCategories(),
+            ]);
+            await autoProcessDueExpenses(expenses, balance);
             return;
         }
 
@@ -102,7 +182,13 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
 
         if (data?.role === 'admin' || data?.role === 'super_admin') {
             setIsAdmin(true);
-            await Promise.all([fetchUsers(), fetchCategories(), fetchFundBalance(), fetchRecurringExpenses()]);
+            const [expenses, balance] = await Promise.all([
+                fetchRecurringExpenses(),
+                fetchFundBalance(),
+                fetchUsers(),
+                fetchCategories(),
+            ]);
+            await autoProcessDueExpenses(expenses, balance);
         } else {
             setLoading(false);
         }
@@ -124,15 +210,42 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         return false;
     };
 
+    /**
+     * Set balance to a specific target value.
+     * Computes the delta vs current balance and inserts a deposit or withdrawal transaction.
+     * Returns null on success, or an error message string on failure.
+     */
+    const setBalance = async (targetBalance: number, currentBalance: number): Promise<string | null> => {
+        if (isNaN(targetBalance) || !currentFloorId) return 'Invalid amount or floor.';
+        const delta = targetBalance - currentBalance;
+        if (delta === 0) return null;
+
+        const type = delta > 0 ? 'deposit' : 'withdrawal';
+        const { error } = await supabase
+            .from('transactions')
+            .insert([{
+                amount: Math.abs(delta),
+                type,
+                description: delta > 0 ? 'Admin Balance Adjustment (deposit)' : 'Admin Balance Adjustment (withdrawal)',
+                floor_id: currentFloorId,
+            }]);
+
+        if (!error) {
+            setFundBalanceState(targetBalance);
+            return null;
+        }
+        console.error('setBalance error:', error);
+        return error.message;
+    };
+
+    // Keep addFunds for backward compatibility (used in tests)
     const addFunds = async (amount: number) => {
         if (isNaN(amount) || amount <= 0 || !currentFloorId) return false;
-
         const { error } = await supabase
             .from('transactions')
             .insert([{ amount, type: 'deposit', description: 'Admin Manual Deposit', floor_id: currentFloorId }]);
-
         if (!error) {
-            setFundBalance((prev: number) => prev + amount);
+            setFundBalanceState((prev: number) => prev + amount);
             return true;
         }
         return false;
@@ -212,12 +325,12 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         return !error;
     };
 
-    const createRecurringExpense = async (title: string, amount: number, categoryId: string) => {
+    const createRecurringExpense = async (title: string, amount: number, categoryId: string, interval: string = 'monthly') => {
         if (!title.trim() || isNaN(amount) || amount <= 0 || !categoryId || !currentFloorId) return false;
 
         const { data, error } = await supabase
             .from('recurring_expenses')
-            .insert([{ title, amount, category_id: categoryId, floor_id: currentFloorId }])
+            .insert([{ title, amount, category_id: categoryId, floor_id: currentFloorId, recurrence_interval: interval }])
             .select('*, categories(name, color_theme)')
             .single();
 
@@ -225,6 +338,7 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
             setRecurringExpenses([data, ...recurringExpenses]);
             return true;
         }
+        if (error) console.error('createRecurringExpense error:', error);
         return false;
     };
 
@@ -238,15 +352,16 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
             setRecurringExpenses(recurringExpenses.map((e: RecurringExpense) => e.id === expenseId ? { ...e, is_active: isActive } : e));
             return true;
         }
+        console.error('toggleRecurringExpense error:', error);
         return false;
     };
 
-    const updateRecurringExpense = async (expenseId: string, title: string, amount: number, categoryId: string) => {
+    const updateRecurringExpense = async (expenseId: string, title: string, amount: number, categoryId: string, interval: string = 'monthly') => {
         if (!title.trim() || isNaN(amount) || amount <= 0 || !categoryId) return false;
 
         const { data, error } = await supabase
             .from('recurring_expenses')
-            .update({ title, amount, category_id: categoryId })
+            .update({ title, amount, category_id: categoryId, recurrence_interval: interval })
             .eq('id', expenseId)
             .select('*, categories(name, color_theme)')
             .single();
@@ -255,23 +370,35 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
             setRecurringExpenses(recurringExpenses.map((e: RecurringExpense) => e.id === expenseId ? data : e));
             return true;
         }
+        if (error) console.error('updateRecurringExpense error:', error);
         return false;
     };
 
+    // Kept for backward compatibility / manual override
     const processRecurringExpense = async (expense: RecurringExpense) => {
         const { error } = await supabase
             .from('transactions')
-            .insert([{ 
-                amount: expense.amount, 
-                type: 'withdrawal', 
+            .insert([{
+                amount: expense.amount,
+                type: 'withdrawal',
                 description: `Recurring Expense: ${expense.title}`,
                 floor_id: expense.floor_id || currentFloorId
             }]);
 
         if (!error) {
-            setFundBalance(prev => prev - expense.amount);
+            const nowIso = new Date().toISOString();
+            await supabase
+                .from('recurring_expenses')
+                .update({ last_processed_at: nowIso })
+                .eq('id', expense.id);
+
+            setFundBalanceState(prev => prev - expense.amount);
+            setRecurringExpenses(prev =>
+                prev.map(e => e.id === expense.id ? { ...e, last_processed_at: nowIso } : e)
+            );
             return true;
         }
+        console.error('processRecurringExpense error:', error);
         return false;
     };
 
@@ -279,11 +406,12 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         users,
         categories,
         recurringExpenses,
-        fundBalance,
+        fundBalance: fundBalance,
         loading,
         isAdmin,
         createCategory,
         addFunds,
+        setBalance,
         approveUser,
         revokeUser,
         promoteUser,
@@ -293,5 +421,6 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         toggleRecurringExpense,
         updateRecurringExpense,
         processRecurringExpense,
+        getNextBillingDate,
     };
 }
