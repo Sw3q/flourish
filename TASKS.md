@@ -19,6 +19,7 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
     - [ ] 2. Audit delegation override logic for edge cases in multi-floor scenarios.
 
 ## Completed Tasks History
+- **Phase 42 (Interactive Treasury Visualization)**: Implemented SVG donut chart with hover reveals and a compact selection dropdown.
 - **Phase 37 (Admin Isolation)**: Hardened RLS to restrict floor admins to their own domain and enhanced super admin dashboard with building-wide floor labels.
 - **Phase 36 (Magic Link Auth & Floor naming)**: Replaced passwords with dynamic magic link detection, fixed signup floor assignment, and renamed/reordered all 16 building floors.
 - **Phase 35 (Dashboard Layout Refinement)**: Eliminated whitespace by moving governance mechanisms into the main grid and positioning the launch button at the top.

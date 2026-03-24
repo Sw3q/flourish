@@ -36,6 +36,7 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Test-Driven Culture**: Unit tests (`*.test.ts/tsx`) must accompany all logic changes, hooks, and regressions.
 *   **Aesthetics**: "Frontier OS" - Refined Editorial aesthetic. Use **Bricolage Grotesque** for headings and **Plus Jakarta Sans** for body. Rely on a charcoal/cream palette with Frontier Blue accents. Incorporate noise textures and grain overlays for depth.
 *   **Components**: Keep components practical. Extract complex Supabase data interactions into custom hooks (e.g. `useProposals.ts`, `useAdminActions.ts`, `useHypercerts.ts`, `useFloors.ts`, `useTowerStats.ts`).
+*   **Visualizations**: Maintain high-fidelity, interactive SVG-based visualizations for global tower metrics (e.g., Donut Charts, Trend Polylines). Avoid heavy third-party charting libraries to preserve the "Refined Editorial" load performance and specialized aesthetic.
 
 ## 5. Architectural Strictures
 *   **Server-Side Source of Truth**: NEVER calculate vital governance states (quorum, vote passage, threshold) on the frontend. Use Supabase Postgres Functions (`evaluate_proposal`) and Triggers to evaluate proposal success. Success is defined by maintaining 40% quorum and majority Yes for 24 consecutive hours.

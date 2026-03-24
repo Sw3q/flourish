@@ -1,57 +1,143 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 interface FloorTreasuryChartProps {
     data: { name: string; balance: number }[];
 }
 
 export function FloorTreasuryChart({ data }: FloorTreasuryChartProps) {
-    const maxBalance = Math.max(...data.map(d => d.balance), 1);
-    const chartHeight = 200;
-    const barWidth = 40;
-    const gap = 20;
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    const totalBalance = useMemo(() => data.reduce((acc, d) => acc + d.balance, 0), [data]);
+
+    // SVG Dimensions
+    const size = 260; // Reduced from 320 for compactness
+    const center = size / 2;
+    const radius = 110; // Slightly reduced
+    const thickness = 35; // Slightly reduced
+    const innerRadius = radius - thickness;
+
+    // Calculate segments
+    let startAngle = -Math.PI / 2; // Start from top
+    const segments = data.map((d, i) => {
+        const percentage = d.balance / (totalBalance || 1);
+        const angle = percentage * 2 * Math.PI;
+
+        // Arc coordinates
+        const x1 = center + radius * Math.cos(startAngle);
+        const y1 = center + radius * Math.sin(startAngle);
+        const x2 = center + radius * Math.cos(startAngle + angle);
+        const y2 = center + radius * Math.sin(startAngle + angle);
+
+        const xi1 = center + innerRadius * Math.cos(startAngle);
+        const yi1 = center + innerRadius * Math.sin(startAngle);
+        const xi2 = center + innerRadius * Math.cos(startAngle + angle);
+        const yi2 = center + innerRadius * Math.sin(startAngle + angle);
+
+        const largeArcFlag = angle > Math.PI ? 1 : 0;
+
+        const path = `
+            M ${x1} ${y1}
+            A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
+            L ${xi2} ${yi2}
+            A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${xi1} ${yi1}
+            Z
+        `;
+
+        const currentStartAngle = startAngle;
+        startAngle += angle;
+
+        return { ...d, path, index: i, startAngle: currentStartAngle, angle };
+    });
+
+    const activeItem = hoveredIndex !== null ? data[hoveredIndex] : null;
 
     return (
-        <div className="w-full overflow-x-auto pb-4 scrollbar-hide">
-            <svg 
-                width={data.length * (barWidth + gap)} 
-                height={chartHeight + 40} 
-                className="overflow-visible"
-            >
-                {data.map((d, i) => {
-                    const normalizedHeight = (d.balance / maxBalance) * chartHeight;
-                    const x = i * (barWidth + gap);
-                    return (
-                        <g key={d.name} className="group cursor-help transition-all duration-500">
-                            <rect
-                                x={x}
-                                y={chartHeight - normalizedHeight}
-                                width={barWidth}
-                                height={normalizedHeight}
-                                fill="currentColor"
-                                className="text-primary-600/10 group-hover:text-primary-600 transition-colors duration-500 rounded-t-xl"
-                                rx="4"
-                            />
-                            <rect
-                                x={x}
-                                y={chartHeight - normalizedHeight}
-                                width={barWidth}
-                                height={4}
-                                fill="currentColor"
-                                className="text-primary-600 rounded-full"
-                            />
-                            <text
-                                x={x + barWidth / 2}
-                                y={chartHeight + 20}
-                                textAnchor="middle"
-                                className="text-[9px] font-black fill-slate-400 group-hover:fill-slate-900 transition-colors uppercase tracking-widest"
-                            >
-                                {d.name.split(' ')[0]}
-                            </text>
-                            <title>{d.name}: ${d.balance.toLocaleString()}</title>
-                        </g>
-                    );
-                })}
-            </svg>
+        <div className="w-full flex flex-col items-center justify-center py-4">
+            <div className="relative group/donut">
+                <svg
+                    width={size}
+                    height={size}
+                    className="overflow-visible drop-shadow-2xl"
+                >
+                    {/* Background track */}
+                    <circle
+                        cx={center}
+                        cy={center}
+                        r={radius - thickness / 2}
+                        fill="none"
+                        stroke="rgba(var(--primary-600-rgb, 37, 99, 235), 0.03)"
+                        strokeWidth={thickness}
+                    />
+
+                    {segments.map((s, i) => (
+                        <path
+                            key={s.name}
+                            d={s.path}
+                            className={`
+                                cursor-pointer transition-all duration-300
+                                ${hoveredIndex === i ? 'opacity-100 scale-105' : 'opacity-70 grayscale-[0.5]'}
+                                group-hover/donut:hover:opacity-100 group-hover/donut:hover:grayscale-0
+                            `}
+                            style={{
+                                fill: `hsl(262, 70%, ${Math.max(30, 80 - i * 5)}%)`,
+                                transformOrigin: 'center'
+                            }}
+                            onMouseEnter={() => setHoveredIndex(i)}
+                            onMouseLeave={() => setHoveredIndex(null)}
+                        >
+                            <title>{s.name}: ${s.balance.toLocaleString()}</title>
+                        </path>
+                    ))}
+
+                    {/* Central Label */}
+                    <foreignObject
+                        x={center - innerRadius + 10}
+                        y={center - innerRadius + 10}
+                        width={innerRadius * 2 - 20}
+                        height={innerRadius * 2 - 20}
+                    >
+                        <div className="w-full h-full flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+                            {activeItem ? (
+                                <>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+                                        {activeItem.name}
+                                    </span>
+                                    <span className="text-xl font-display font-extrabold text-slate-900 tracking-tighter">
+                                        ${activeItem.balance.toLocaleString()}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+                                        Global Total
+                                    </span>
+                                    <span className="text-2xl font-display font-extrabold text-primary-600 tracking-tighter">
+                                        ${totalBalance.toLocaleString()}
+                                    </span>
+                                    <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-2">
+                                        Hover for Details
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </foreignObject>
+                </svg>
+            </div>
+
+            {/* Simple Dropdown for selection (replacing complex legend) */}
+            <div className="mt-4 mb-2 w-full max-w-xs px-4">
+                <select 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer"
+                    value={hoveredIndex ?? ''}
+                    onChange={(e) => setHoveredIndex(e.target.value === '' ? null : Number(e.target.value))}
+                >
+                    <option value="">View Tower Total</option>
+                    {data.map((d, i) => (
+                        <option key={d.name} value={i}>
+                            {d.name.replace(/:$/, '')} — ${d.balance.toLocaleString()}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </div>
     );
 }

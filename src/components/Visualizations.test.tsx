@@ -4,16 +4,18 @@ import { FloorTreasuryChart, ActivityTrendChart } from './Visualizations';
 
 describe('Visualizations Components', () => {
     describe('FloorTreasuryChart', () => {
-        it('renders with data', () => {
+        it('renders with data segments', () => {
             const data = [
                 { name: 'Floor 1', balance: 1000 },
                 { name: 'Floor 2', balance: 2000 },
             ];
             const { container } = render(<FloorTreasuryChart data={data} />);
+            const paths = container.querySelectorAll('path');
             const svg = container.querySelector('svg');
             expect(svg).toBeDefined();
-            expect(container.textContent).toContain('Floor 1');
-            expect(container.textContent).toContain('Floor 2');
+            // Should have 2 paths for the 2 data items
+            expect(paths.length).toBe(2);
+            expect(container.textContent).toContain('Global Total');
         });
     });
 
