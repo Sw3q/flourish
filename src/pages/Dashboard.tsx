@@ -5,6 +5,7 @@ import ProposalsList from '../components/ProposalsList';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useHypercerts } from '../hooks/useHypercerts';
 import { useProposals } from '../hooks/useProposals';
+import OffersAsksBoard from '../components/OffersAsksBoard';
 
 export default function Dashboard() {
     const { floorId: floorIdParam } = useParams();
@@ -24,11 +25,11 @@ export default function Dashboard() {
         floorName,
     } = useDashboardData(floorIdParam);
 
-    const { refreshData: refreshProposals } = useProposals(currentUser?.id || '', floorIdParam || (currentUser as any)?.floor_id);
+    const { refreshData: refreshProposals } = useProposals(currentUser?.id || '', floorIdParam || currentUser?.floor_id || null);
 
     const [isCreating, setIsCreating] = useState(false);
 
-    const isCurrentFloor = !floorIdParam || floorIdParam === (currentUser as any)?.floor_id;
+    const isCurrentFloor = !floorIdParam || floorIdParam === currentUser?.floor_id;
     const { linkAtProtoIdentity, resolveHandle } = useHypercerts();
     const [handle, setHandle] = useState(currentUser?.atproto_handle || '');
     const [appPassword, setAppPassword] = useState(currentUser?.atproto_app_password || '');
@@ -78,10 +79,10 @@ export default function Dashboard() {
                 <div className="bg-primary-100 text-primary-900 p-4 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl border border-primary-200 group">
                     <div className="flex items-center text-sm font-bold tracking-tight px-4">
                         <div className="w-2 h-2 bg-amber-500 rounded-full mr-3 animate-pulse"></div>
-                        VIRTUAL PERSPECTIVE: YOU ARE VIEWING {floorName?.toUpperCase()}
+                        YOU CAN ONLY POST OFFERS/ASKS. YOU ARE ON THE {floorName?.toUpperCase()} FLOOR.
                     </div>
                     <Link
-                        to={`/floor/${(currentUser as any)?.floor_id}`}
+                        to={`/floor/${currentUser?.floor_id}`}
                         className="px-6 py-2 bg-white text-slate-900 text-xs font-black rounded-full hover:bg-primary-50 transition-all flex items-center gap-2 uppercase tracking-widest shadow-lg"
                     >
                         Return to Personal Floor
@@ -89,6 +90,14 @@ export default function Dashboard() {
                     </Link>
                 </div>
             )}
+
+            {/* Local Offers & Asks Board */}
+            <OffersAsksBoard 
+                floorId={floorIdParam || currentUser?.floor_id} 
+                mode="local" 
+                currentUser={currentUser!}
+                floorName={floorName}
+            />
 
             {/* Premium Header & High-Impact Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -148,7 +157,7 @@ export default function Dashboard() {
                             <div className="animate-in slide-in-from-top-4 duration-500">
                                 <ProposalsList
                                     currentUserId={currentUser.id}
-                                    currentFloorId={floorIdParam || (currentUser as any).floor_id}
+                                    currentFloorId={floorIdParam || currentUser.floor_id!}
                                     members={members}
                                     proposalDelegations={proposalDelegations}
                                     globalDelegatedTo={currentUser.delegated_to}
@@ -169,7 +178,7 @@ export default function Dashboard() {
                                 {currentUser && (
                                     <ProposalsList
                                         currentUserId={currentUser.id}
-                                        currentFloorId={floorIdParam || (currentUser as any).floor_id}
+                                        currentFloorId={floorIdParam || currentUser.floor_id!}
                                         members={members}
                                         proposalDelegations={proposalDelegations}
                                         globalDelegatedTo={currentUser.delegated_to}

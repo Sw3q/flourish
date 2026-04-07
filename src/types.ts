@@ -62,3 +62,16 @@ export type Transaction = {
     floor_id: string;
     created_at: string;
 };
+
+export type OfferAsk = {
+    id: string;
+    type: 'offer' | 'ask';
+    title: string;
+    description: string;
+    creator_id: string;
+    floor_id: string;
+    status: 'active' | 'completed';
+    created_at: string;
+    profiles?: { email: string; atproto_handle?: string };
+    floors?: { name: string; floor_number: number };
+};

@@ -1,27 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export type Category = {
-    id: string;
-    name: string;
-    color_theme: string;
-};
-
-export type Proposal = {
-    id: string;
-    title: string;
-    description: string;
-    amount: number;
-    status: 'active' | 'passed' | 'rejected';
-    created_at: string;
-    expires_at: string;
-    quorum_reached_at: string | null;
-    category_id: string;
-    creator_id: string;
-    categories: { name: string; color_theme: string };
-    profiles: { email: string };
-    hypercert_uri?: string;
-};
+import type { Proposal, Category } from '../types';
+export type { Proposal, Category };
 
 export function useProposals(currentUserId: string, currentFloorId: string | null) {
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -31,71 +12,8 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
     const [participationMap, setParticipationMap] = useState<Record<string, boolean>>({});
     const [totalApprovedUsers, setTotalApprovedUsers] = useState(0);
 
-    const fetchData = async () => {
-        if (!currentFloorId) return;
-
-        const { data: cats } = await supabase.from('categories').select('*').eq('floor_id', currentFloorId);
-        if (cats) setCategories(cats);
-
-        const { data: props } = await supabase
-            .from('proposals')
-            .select('*, categories (name, color_theme), profiles:creator_id (email)')
-            .eq('floor_id', currentFloorId)
-            .order('created_at', { ascending: false });
-        
-        // Sync DB (fire and forget)
-        supabase.rpc('evaluate_cleanup').then();
-
-        const now = new Date();
-        const filteredProps = (props || []).filter((p: any) => {
-            if (p.status === 'active' && new Date(p.expires_at) < now) return false;
-            return true;
-        });
-
-        if (props) setProposals(filteredProps as unknown as Proposal[]);
-
-        // Participation tracking: Direct votes + Delegated participation
-        const { data: allVotes } = await supabase.from('votes').select('*');
-        const { data: profile } = await supabase.from('profiles').select('delegated_to').eq('id', currentUserId).single();
-        const { data: propDelegations } = await supabase.from('proposal_delegations').select('*').eq('user_id', currentUserId);
-
-        if (allVotes && props) {
-            const pMap: Record<string, boolean> = {};
-            const userVoteMap: Record<string, boolean> = {};
-
-            props.forEach((proposal: any) => {
-                const directVote = allVotes.find(v => v.proposal_id === proposal.id && v.voter_id === currentUserId);
-                if (directVote) {
-                    pMap[proposal.id] = true;
-                    userVoteMap[proposal.id] = directVote.vote;
-                } else {
-                    // Check proposal-specific delegation first, then fall back to global
-                    const proposalDelegate = propDelegations?.find(pd => pd.proposal_id === proposal.id)?.delegated_to;
-                    const effectiveDelegate = proposalDelegate || profile?.delegated_to;
-                    
-                    if (effectiveDelegate) {
-                        const delegateVoted = allVotes.some(v => v.proposal_id === proposal.id && v.voter_id === effectiveDelegate);
-                        if (delegateVoted) pMap[proposal.id] = true;
-                    }
-                }
-            });
-
-            setParticipationMap(pMap);
-            setUserVotes(userVoteMap);
-        }
-
-        await fetchVoteTotals(props as unknown as Proposal[]);
-
-        const { count } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('floor_id', currentFloorId)
-            .eq('is_approved', true);
-        setTotalApprovedUsers(count || 0);
-    };
-
     // Read-only vote totals for UI display. Status changes are owned by the DB trigger.
-    const fetchVoteTotals = async (props: Proposal[] | null) => {
+    const fetchVoteTotals = useCallback(async (props: Proposal[] | null) => {
         if (!props) return;
         const active = props.filter(p => p.status === 'active');
         if (active.length === 0) return;
@@ -118,7 +36,7 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
         const voteTotals: Record<string, { yes: number, total: number }> = {};
         active.forEach(p => { voteTotals[p.id] = { yes: 0, total: 0 }; });
 
-        allVotes.forEach((v: any) => {
+        allVotes.forEach((v: { proposal_id: string; voter_id: string; vote: boolean }) => {
             const proposal = active.find(p => p.id === v.proposal_id);
             if (!proposal || !voteTotals[v.proposal_id]) return;
 
@@ -150,7 +68,70 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
         });
 
         setProposalVotes(voteTotals);
-    };
+    }, []);
+
+    const fetchData = useCallback(async () => {
+        if (!currentFloorId) return;
+
+        const { data: cats } = await supabase.from('categories').select('*').eq('floor_id', currentFloorId);
+        if (cats) setCategories(cats);
+
+        const { data: props } = await supabase
+            .from('proposals')
+            .select('*, categories (name, color_theme), profiles:creator_id (email)')
+            .eq('floor_id', currentFloorId)
+            .order('created_at', { ascending: false });
+        
+        // Sync DB (fire and forget)
+        supabase.rpc('evaluate_cleanup').then();
+
+        const now = new Date();
+        const filteredProps = (props || []).filter((p: Proposal) => {
+            if (p.status === 'active' && new Date(p.expires_at) < now) return false;
+            return true;
+        });
+
+        if (props) setProposals(filteredProps as unknown as Proposal[]);
+
+        // Participation tracking: Direct votes + Delegated participation
+        const { data: allVotes } = await supabase.from('votes').select('*');
+        const { data: profile } = await supabase.from('profiles').select('delegated_to').eq('id', currentUserId).single();
+        const { data: propDelegations } = await supabase.from('proposal_delegations').select('*').eq('user_id', currentUserId);
+
+        if (allVotes && props) {
+            const pMap: Record<string, boolean> = {};
+            const userVoteMap: Record<string, boolean> = {};
+
+            props.forEach((proposal: Proposal) => {
+                const directVote = allVotes.find(v => v.proposal_id === proposal.id && v.voter_id === currentUserId);
+                if (directVote) {
+                    pMap[proposal.id] = true;
+                    userVoteMap[proposal.id] = directVote.vote;
+                } else {
+                    // Check proposal-specific delegation first, then fall back to global
+                    const proposalDelegate = propDelegations?.find(pd => pd.proposal_id === proposal.id)?.delegated_to;
+                    const effectiveDelegate = proposalDelegate || profile?.delegated_to;
+                    
+                    if (effectiveDelegate) {
+                        const delegateVoted = allVotes.some(v => v.proposal_id === proposal.id && v.voter_id === effectiveDelegate);
+                        if (delegateVoted) pMap[proposal.id] = true;
+                    }
+                }
+            });
+
+            setParticipationMap(pMap);
+            setUserVotes(userVoteMap);
+        }
+
+        await fetchVoteTotals(props as unknown as Proposal[]);
+
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('floor_id', currentFloorId)
+            .eq('is_approved', true);
+        setTotalApprovedUsers(count || 0);
+    }, [currentFloorId, currentUserId, fetchVoteTotals]);
 
     const createProposal = async (title: string, description: string, amount: number, categoryId: string, durationDays: number) => {
         if (!currentFloorId) return false;
@@ -258,7 +239,7 @@ export function useProposals(currentUserId: string, currentFloorId: string | nul
 
     useEffect(() => {
         if (currentUserId && currentFloorId) fetchData();
-    }, [currentUserId, currentFloorId]);
+    }, [currentUserId, currentFloorId, fetchData]);
 
     return { 
         proposals, 

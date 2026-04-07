@@ -2,15 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { CONFIG } from '../config';
 
-export type Profile = {
-    id: string;
-    email: string;
-    delegated_to: string | null;
-    role: string;
-    atproto_did?: string;
-    atproto_handle?: string;
-    atproto_app_password?: string;
-};
+import type { Profile } from '../types';
+export type { Profile };
 
 export function useDashboardData(floorIdOverride?: string | null) {
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
@@ -25,6 +18,7 @@ export function useDashboardData(floorIdOverride?: string | null) {
 
     useEffect(() => {
         fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [floorIdOverride]);
 
     const fetchDashboardData = async () => {
@@ -48,16 +42,19 @@ export function useDashboardData(floorIdOverride?: string | null) {
         if (profile) {
             setCurrentUser(profile as Profile);
         } else if (CONFIG.BYPASS_AUTH) {
-            const bypassUser = {
+            const bypassUser: Profile = {
                 id: user.id,
                 email: user.email!,
                 role: 'super_admin',
                 floor_id: '00000000-0000-0000-0000-000000000000',
                 delegated_to: null,
-                is_approved: true
+                is_approved: true,
+                atproto_did: undefined,
+                atproto_handle: undefined,
+                atproto_app_password: undefined
             };
             setCurrentUser(bypassUser);
-            profile = { floor_id: '00000000-0000-0000-0000-000000000000' } as any;
+            profile = { floor_id: '00000000-0000-0000-0000-000000000000' } as Profile;
         }
 
         const activeFloorId = floorIdOverride || profile?.floor_id;

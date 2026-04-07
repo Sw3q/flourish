@@ -11,6 +11,7 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.
 *   **Recurring Expenses**: Admins can define and manage monthly recurring expenses, which are manually processed to deduct from the communal pot, providing transparency to all users on the dashboard.
 *   **Hypercerts (Impact Tracking)**: Impact records can be issued for passed proposals using the AT Protocol. Issuance power is decentralized: any approved member who participated in the proposal (directly or through delegation) can link their identity and issue a Hypercert (`HypercertIssuanceModal.tsx`, `useHypercerts.ts`).
+*   **Offers & Asks Board**: A community bulletin board for floor-local and building-wide requests. Features 7-day expiration and type-based filtering (Offers/Asks) at the top of the dashboard (`OffersAsksBoard.tsx`, `useOffersAsks.ts`).
 
 *   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features global activity visualizations and floor-by-floor treasury distributions. Individual floor dashboards are accessed via `/floor/:floorId`.
 *   **Global Sidebar**: A persistent, collapsible navigation sidebar is managed by `AuthLayout.tsx`, allowing for deep-floor access and search across the entire tower.
@@ -35,7 +36,7 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 ## 4. Code Style & Requirements
 *   **Test-Driven Culture**: Unit tests (`*.test.ts/tsx`) must accompany all logic changes, hooks, and regressions.
 *   **Aesthetics**: "Frontier OS" - Refined Editorial aesthetic. Use **Bricolage Grotesque** for headings and **Plus Jakarta Sans** for body. Rely on a charcoal/cream palette with Frontier Blue accents. Incorporate noise textures and grain overlays for depth.
-*   **Components**: Keep components practical. Extract complex Supabase data interactions into custom hooks (e.g. `useProposals.ts`, `useAdminActions.ts`, `useHypercerts.ts`, `useFloors.ts`, `useTowerStats.ts`).
+*   **Components**: Keep components practical. Extract complex Supabase data interactions into modular hooks (e.g. `useAdminUsers.ts`, `useAdminLedger.ts`, `useAdminCategories.ts`). UI components should be highly decoupled (e.g., `ProposalCard.tsx` extracted from `ProposalsList.tsx`).
 *   **Visualizations**: Maintain high-fidelity, interactive SVG-based visualizations for global tower metrics (e.g., Donut Charts, Trend Polylines). Avoid heavy third-party charting libraries to preserve the "Refined Editorial" load performance and specialized aesthetic.
 
 ## 5. Architectural Strictures
@@ -44,6 +45,7 @@ For maximum efficiency, adhere to the **Plan → Break Down Tasks → Execute �
 *   **Delegation Override**: Logic must ensure that direct votes cast by a user ALWAYS override any power they would have delegated. This applies to both the SQL `evaluate_proposal` logic and frontend `useProposals` weight calculations.
 *   **Vote Manipulation / DB Updates**: Vote toggling and `category_delegations` assignment must use explicit `.delete()` then `.insert()` commands. Avoid using `.update()` or `.upsert()` for junction tables missing formal serial primary keys, due to PostgREST silent failure bugs.
 *   **RLS Helpers**: Use `public.is_super_admin()`, `public.is_admin()`, and `public.is_approved()` SECURITY DEFINER functions in RLS policies to avoid infinite recursion when querying the `profiles` table. Standard admins must have their `floor_id` matched in RLS for update actions on that floor.
+*   **User Rejection**: Admin rejection must use the `reject_user` RPC function to cascade-delete the user from both public profiles and the `auth.users` table for complete removal.
 *   **Hypercert Issuance**: Only users who contributed voting weight to a proposal (directly or via delegation) are permitted to issue its Hypercert. This is enforced via RLS and the `evaluate_proposal` logic.
 *   **Component Composition**: Highly specialized UI components (like `ProposalsList`) should expose control props (`hideHeader`, `isCreatingOverride`) to parent pages (`Dashboard.tsx`) to allow for context-specific layout overrides and state management.
 

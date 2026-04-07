@@ -3,22 +3,15 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
-- [ ] **Phase 41: Brand Kit Overhaul & Re-styling**
-    - [ ] 1. Update `src/index.css` with the new Frontier Violet color palette.
-    - [ ] 2. Create placeholder logo files in `src/assets` to be replaced by the user.
-    - [ ] 3. Replace existing text/SVG logos in layout components with image tags for the new brand logos.
-    - [ ] 4. Ensure UI components align well with the new styling.
-    - [ ] 5. Write/update unit tests for modified components.
-- [ ] **Phase 40: Circular Delegation UI Blocker**
-    - [x] 1. Detect circular delegation (A delegates to B, B delegates to A).
-    - [x] 2. Implement UI blocker in `Dashboard.tsx` (Global Delegation).
-    - [x] 3. Implement UI blocker in `ProposalsList.tsx` (Per-proposal Delegation).
-    - [x] 4. Add unit test coverage in `Dashboard.test.tsx` and `ProposalsList.test.tsx`.
+- [ ] **Phase 44: Implementation Follow-ups**
+    - [ ] 1. Monitor real-world performance of the conviction voting evaluation loops.
+    - [ ] 2. Extend Offer/Ask filtering to include keyword search.
 - [ ] **Phase 38: Governance Audit**
     - [ ] 1. Explore global vs floor-specific voting power configurations for super_admins.
     - [ ] 2. Audit delegation override logic for edge cases in multi-floor scenarios.
 
 ## Completed Tasks History
+- **Phase 43 (Offers/Asks Board)**: Implemented per-floor bulletin board with global aggregation and type-based filtering.
 - **Phase 42 (Interactive Treasury Visualization)**: Implemented SVG donut chart with hover reveals and a compact selection dropdown.
 - **Phase 37 (Admin Isolation)**: Hardened RLS to restrict floor admins to their own domain and enhanced super admin dashboard with building-wide floor labels.
 - **Phase 36 (Magic Link Auth & Floor naming)**: Replaced passwords with dynamic magic link detection, fixed signup floor assignment, and renamed/reordered all 16 building floors.
@@ -32,4 +25,7 @@ Use this document to break down plans into atomic, checklist-style tasks with ch
 - **Phase 28 (Building Dashboard)**: Created data-rich `BuildingView.tsx` with global/floor stats and `useTowerStats.ts`.
 - **Phase 25 (Building View Navigation)**: Interactive tower navigation and multi-floor routing.
 - **Phase 24 (Multi-Floor Architecture)**: Multi-tenant system with `floor_id` scoping and RLS safety.
+- **Phase 45 (Admin Hardening)**: Implemented `reject_user` RPC for full user deletion and modularized `useAdminActions.ts`.
+- **Phase 44 (Codebase Cleanup)**: Decoupled `ProposalsList.tsx`, unified types in `src/types.ts`, and resolved all lint/TS errors.
+- **Phase 40 (Circular Delegation)**: Implemented UI blockers to prevent infinite delegation loops globally and per-proposal.
 - **Outdated Tasks**: Tinder UI (23), Recurring Expenses (11, 14), Conviction Voting (12), Hypercerts (20, 21), Auth Bypass (19).

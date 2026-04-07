@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Clock, ThumbsUp, ThumbsDown, CheckCircle2, Users, ExternalLink, Award, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, MessageSquare, Edit3, Save } from 'lucide-react';
+import { Plus, X, CheckCircle2, ExternalLink, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProposals, type Proposal } from '../hooks/useProposals';
 import HypercertIssuanceModal from './HypercertIssuanceModal';
-import ProposalChat from './ProposalChat';
-import type { Profile } from '../hooks/useDashboardData';
+import ProposalCard from './proposals/ProposalCard';
+import type { Profile } from '../types';
 
 export interface ProposalsListProps {
     currentUserId: string;
     currentFloorId: string | null;
-    members: any[];
+    members: Profile[];
     proposalDelegations: Record<string, string>;
     globalDelegatedTo: string | null;
     onDelegateProposal: (proposalId: string, targetUserId: string | null) => Promise<boolean>;
@@ -17,218 +17,6 @@ export interface ProposalsListProps {
     hideHeader?: boolean;
     isCreatingOverride?: boolean;
     onCloseCreating?: () => void;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Countdown Timer Sub-Component
-// ─────────────────────────────────────────────────────────────────────────────
-function ProposalTimer({ expiresAt, createdAt }: { expiresAt: string; createdAt: string }) {
-    const [timeLeft, setTimeLeft] = useState('');
-    const [colorClass, setColorClass] = useState('text-green-600');
-    const [bgClass, setBgClass] = useState('bg-green-50');
-
-    const compute = useCallback(() => {
-        const now = Date.now();
-        const end = new Date(expiresAt).getTime();
-        const start = new Date(createdAt).getTime();
-        const totalMs = end - start;
-        const remainingMs = end - now;
-
-        if (remainingMs <= 0) {
-            setTimeLeft('Expired');
-            setColorClass('text-slate-400');
-            setBgClass('bg-slate-100');
-            return;
-        }
-
-        const pct = remainingMs / totalMs;
-        if (pct > 0.5) {
-            setColorClass('text-green-700');
-            setBgClass('bg-green-50 border-green-200');
-        } else if (pct > 0.25) {
-            setColorClass('text-yellow-700');
-            setBgClass('bg-yellow-50 border-yellow-200');
-        } else {
-            setColorClass('text-red-700');
-            setBgClass('bg-red-50 border-red-200');
-        }
-
-        const days = Math.floor(remainingMs / 86400000);
-        const hours = Math.floor((remainingMs % 86400000) / 3600000);
-        const mins = Math.floor((remainingMs % 3600000) / 60000);
-
-        if (days > 0) setTimeLeft(`${days}d ${hours}h left`);
-        else if (hours > 0) setTimeLeft(`${hours}h ${mins}m left`);
-        else setTimeLeft(`${mins}m left`);
-    }, [expiresAt, createdAt]);
-
-    useEffect(() => {
-        compute();
-        const interval = setInterval(compute, 60000);
-        return () => clearInterval(interval);
-    }, [compute]);
-
-    return (
-        <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${colorClass} ${bgClass}`}>
-            <Clock className="w-3 h-3" />
-            {timeLeft}
-        </span>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Conviction Progress Sub-Component
-// ─────────────────────────────────────────────────────────────────────────────
-function ConvictionStatus({ quorumReachedAt }: { quorumReachedAt: string | null }) {
-    const [progress, setProgress] = useState(0);
-    const [timeLeft, setTimeLeft] = useState('');
-
-    useEffect(() => {
-        if (!quorumReachedAt) {
-            setProgress(0);
-            return;
-        }
-
-        const interval = setInterval(() => {
-            const start = new Date(quorumReachedAt).getTime();
-            const now = Date.now();
-            const duration = 24 * 60 * 60 * 1000; // 24 hours
-            const elapsed = now - start;
-            const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
-            setProgress(pct);
-
-            const remaining = duration - elapsed;
-            if (remaining > 0) {
-                const hours = Math.floor(remaining / 3600000);
-                const mins = Math.floor((remaining % 3600000) / 60000);
-                setTimeLeft(`${hours}h ${mins}m until pass`);
-            } else {
-                setTimeLeft('Passing soon...');
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [quorumReachedAt]);
-
-    if (!quorumReachedAt) return (
-        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-black uppercase tracking-widest border border-slate-100 bg-slate-50 px-3 py-1.5 rounded-full">
-            <Users className="w-3 h-3" />
-            Waiting for Quorum
-        </div>
-    );
-
-    return (
-        <div className="space-y-2 w-full pt-4 border-t border-slate-50">
-            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-primary-600">
-                <span>Force of Conviction</span>
-                <span>{progress}%</span>
-            </div>
-            <div className="w-full h-2 bg-primary-100 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-primary-600 transition-all duration-1000 ease-linear rounded-full"
-                    style={{ width: `${progress}%` }}
-                ></div>
-            </div>
-            <div className="text-[9px] text-primary-500 font-bold uppercase tracking-widest">{timeLeft}</div>
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Delegation Pills Sub-Component
-// ─────────────────────────────────────────────────────────────────────────────
-function DelegationPills({
-    proposalId,
-    currentUserId,
-    members,
-    proposalDelegations,
-    onDelegateProposal,
-}: {
-    proposalId: string;
-    currentUserId: string;
-    members: Profile[];
-    proposalDelegations: Record<string, string>;
-    onDelegateProposal: (proposalId: string, targetId: string | null) => Promise<boolean>;
-}) {
-    const activeDelegateId = proposalDelegations[proposalId] ?? null;
-
-    const handleClick = async (memberId: string) => {
-        if (activeDelegateId === memberId) {
-            await onDelegateProposal(proposalId, null);
-        } else {
-            await onDelegateProposal(proposalId, memberId);
-        }
-    };
-
-    if (members.length === 0) return null;
-
-    return (
-        <div className="mt-6 pt-6 border-t border-slate-50">
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Delegate Power:</span>
-                {members.map(member => {
-                    const name = member.email.split('@')[0];
-                    const isActive = activeDelegateId === member.id;
-                    const isCircular = member.delegated_to === currentUserId;
-                    return (
-                        <button
-                            key={member.id}
-                            onClick={() => !isCircular && handleClick(member.id)}
-                            disabled={isCircular}
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight transition-all border ${isActive
-                                ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-600/20'
-                                : isCircular
-                                ? 'bg-slate-50 text-slate-400 border-red-200 opacity-50 cursor-not-allowed'
-                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary-400 hover:text-primary-600 hover:bg-white'
-                                }`}
-                            title={isCircular ? "Delegates to you" : ""}
-                        >
-                            {name} {isCircular ? " (Loop)" : ""}
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dynamic Vote Button Sub-Component
-// ─────────────────────────────────────────────────────────────────────────────
-function VoteButton({
-    proposalId,
-    isYes,
-    isActive,
-    onVote,
-    getVotingPower,
-    disabled = false,
-}: {
-    proposalId: string;
-    isYes: boolean;
-    isActive: boolean;
-    onVote: (id: string, yes: boolean) => Promise<void>;
-    getVotingPower: (proposalId: string) => Promise<number>;
-    disabled?: boolean;
-}) {
-    const [power, setPower] = useState<number | null>(null);
-
-    useEffect(() => {
-        getVotingPower(proposalId).then(setPower);
-    }, [proposalId, getVotingPower]);
-
-    return (
-        <button
-            onClick={() => !disabled && onVote(proposalId, isYes)}
-            disabled={disabled}
-            className={`flex-1 flex items-center justify-center py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${isActive
-                ? 'bg-primary-600 text-white shadow-xl shadow-primary-600/30'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700'
-                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-            {isYes ? <ThumbsUp className="w-4 h-4 mr-2" /> : <ThumbsDown className="w-4 h-4 mr-2" />}
-            {isYes ? 'Yes' : 'No'} ({power ?? '..'})
-        </button>
-    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,16 +59,7 @@ export default function ProposalsList({
     const [newCatId, setNewCatId] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
     const [issuingProposal, setIssuingProposal] = useState<Proposal | null>(null);
-
-    // Edit & Chat State
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editTitle, setEditTitle] = useState('');
-    const [editDesc, setEditDesc] = useState('');
-    const [editAmount, setEditAmount] = useState('');
-    const [editCatId, setEditCatId] = useState('');
-    const [showChatId, setShowChatId] = useState<string | null>(null);
 
     const [activeTab, setActiveTab] = useState<'to-vote' | 'my-votes'>('to-vote');
     const [activeIndex, setActiveIndex] = useState(0);
@@ -310,33 +89,6 @@ export default function ProposalsList({
             setTimeout(() => setShowToast(false), 4000);
         }
         setSubmitting(false);
-    };
-
-    const handleUpdateProposal = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingId) return;
-        setSubmitting(true);
-        const success = await updateProposal(editingId, editTitle, editDesc, Number(editAmount), editCatId);
-        if (success) {
-            setEditingId(null);
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 4000);
-        }
-        setSubmitting(false);
-    };
-
-    const startEditing = (proposal: Proposal) => {
-        setEditingId(proposal.id);
-        setEditTitle(proposal.title);
-        setEditDesc(proposal.description);
-        setEditAmount(proposal.amount.toString());
-        setEditCatId(proposal.category_id);
-    };
-
-    const handleDelete = async (proposalId: string) => {
-        setDeletingId(proposalId);
-        await deleteProposal(proposalId);
-        setDeletingId(null);
     };
 
     const activeProposals = proposals.filter(p => p.status === 'active');
@@ -383,181 +135,33 @@ export default function ProposalsList({
         }
     };
 
-    const renderProposalCard = (proposal: Proposal, isTinderStyle: boolean) => {
-        const catColor = proposal.categories?.color_theme || 'slate';
-        const votes = proposalVotes[proposal.id] || { yes: 0, total: 0 };
-        const threshold = totalApprovedUsers / 2;
-        const progress = Math.min(100, Math.round((votes.yes / Math.max(threshold, 1)) * 100)) || 0;
-        const isCreator = proposal.creator_id === currentUserId;
-        const isEditing = editingId === proposal.id;
-        const isChatting = showChatId === proposal.id;
-
-        const transitionClass = isTinderStyle
-            ? (slideDir === 'right' ? 'translate-x-full opacity-0' : slideDir === 'left' ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100')
-            : 'opacity-100';
-
-        return (
-            <div
-                key={proposal.id}
-                className={`w-full bg-white border border-slate-200 p-8 md:p-10 rounded-[2.5rem] flex flex-col group hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all duration-700 relative overflow-hidden ${transitionClass} ${isTinderStyle ? 'max-w-3xl mx-auto shadow-2xl' : ''}`}
-            >
-                {/* Visual Accent */}
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-${catColor}-500/10 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
-
-                {isEditing ? (
-                    <form onSubmit={handleUpdateProposal} className="relative z-10 space-y-6 flex-1">
-                        <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-xl font-display font-extrabold text-slate-900 tracking-tight">Refining Intent.</h4>
-                            <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Title</label>
-                                <input type="text" required value={editTitle} onChange={e => setEditTitle(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all text-sm" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Category</label>
-                                <select required value={editCatId} onChange={e => setEditCatId(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all text-sm appearance-none">
-                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Description</label>
-                                <textarea required value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-medium text-slate-900 transition-all text-sm leading-relaxed"></textarea>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Amount ($)</label>
-                                <input type="number" required value={editAmount} onChange={e => setEditAmount(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-primary-400 outline-none font-bold text-slate-900 transition-all text-sm" />
-                            </div>
-                        </div>
-                        <button type="submit" disabled={submitting} className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary-600 transition-all shadow-lg flex items-center justify-center gap-2">
-                            {submitting ? 'Updating...' : <><Save className="w-3.5 h-3.5" /> Save Changes</>}
-                        </button>
-                    </form>
-                ) : isChatting ? (
-                    <div className="relative z-10 flex-1 flex flex-col">
-                        <ProposalChat
-                            proposalId={proposal.id}
-                            currentUserId={currentUserId}
-                            currentFloorId={currentFloorId}
-                            onClose={() => setShowChatId(null)}
-                        />
-                    </div>
-                ) : (
-                    <>
-                        {/* Header Section */}
-                        <div className="flex justify-between items-start mb-8 relative z-10">
-                            <div className="flex flex-col gap-2">
-                                <span className={`w-fit px-3 py-1 bg-${catColor}-50 text-${catColor}-700 text-[10px] font-black uppercase tracking-widest rounded-full`}>
-                                    {proposal.categories?.name}
-                                </span>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">
-                                    By {proposal.profiles?.email.split('@')[0]}
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                                <div className="text-3xl font-display font-extrabold text-slate-900">${proposal.amount.toLocaleString()}</div>
-                                <ProposalTimer expiresAt={proposal.expires_at} createdAt={proposal.created_at} />
-                            </div>
-                        </div>
-
-                        {/* Title & Description */}
-                        <div className="mb-10 flex-1 relative z-10">
-                            <h4 className="text-3xl font-display font-extrabold text-slate-900 mb-4 tracking-tight leading-tight group-hover:text-primary-700 transition-colors">
-                                {proposal.title}
-                            </h4>
-                            <p className="text-slate-500 font-medium leading-relaxed">
-                                {proposal.description}
-                            </p>
-                        </div>
-
-                        {/* Engagement Section */}
-                        <div className="space-y-6 relative z-10">
-                            {/* Voting Progress */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-baseline text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    <span>Quorum Progress</span>
-                                    <span>{votes.yes} / {Math.ceil(threshold + 1)} YES</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-slate-900 transition-all duration-700 ease-out rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                            </div>
-
-                            {/* Interaction Bar */}
-                            {!globalDelegatedTo && !proposalDelegations[proposal.id] ? (
-                                <div className="flex gap-4">
-                                    <VoteButton
-                                        proposalId={proposal.id}
-                                        isYes={true}
-                                        isActive={userVotes[proposal.id] === true}
-                                        onVote={handleVoteWithSwipe}
-                                        getVotingPower={getVotingPower}
-                                        disabled={disabled}
-                                    />
-                                    <VoteButton
-                                        proposalId={proposal.id}
-                                        isYes={false}
-                                        isActive={userVotes[proposal.id] === false}
-                                        onVote={handleVoteWithSwipe}
-                                        getVotingPower={getVotingPower}
-                                        disabled={disabled}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group/delegation">
-                                    <div className="flex items-center gap-3">
-                                        <ShieldCheck className="w-5 h-5 text-primary-500" />
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest italic">Voting power delegated</span>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover/delegation:translate-x-1 transition-transform" />
-                                </div>
-                            )}
-
-                            <ConvictionStatus quorumReachedAt={proposal.quorum_reached_at} />
-
-                            <DelegationPills
-                                proposalId={proposal.id}
-                                currentUserId={currentUserId}
-                                members={members}
-                                proposalDelegations={proposalDelegations}
-                                onDelegateProposal={onDelegateProposal}
-                            />
-
-                            <div className="pt-4 border-t border-slate-50 flex justify-between items-center gap-4">
-                                <button
-                                    onClick={() => setShowChatId(proposal.id)}
-                                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary-600 transition-colors"
-                                >
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                    Discuss
-                                </button>
-
-                                {isCreator && (
-                                    <div className="flex items-center gap-6">
-                                        <button
-                                            onClick={() => startEditing(proposal)}
-                                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary-600 transition-colors"
-                                        >
-                                            <Edit3 className="w-3.5 h-3.5" />
-                                            Modify
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(proposal.id)}
-                                            disabled={deletingId === proposal.id}
-                                            className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors"
-                                        >
-                                            Withdraw
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-        );
-    };
+    const renderCard = (proposal: Proposal, isTinderStyle: boolean) => (
+        <ProposalCard
+            key={proposal.id}
+            proposal={proposal}
+            isTinderStyle={isTinderStyle}
+            slideDir={isTinderStyle ? slideDir : null}
+            currentUserId={currentUserId}
+            currentFloorId={currentFloorId}
+            totalApprovedUsers={totalApprovedUsers}
+            userStateVote={userVotes[proposal.id]}
+            proposalVoteStats={proposalVotes[proposal.id] || { yes: 0, total: 0 }}
+            globalDelegatedTo={globalDelegatedTo}
+            proposalDelegations={proposalDelegations}
+            members={members}
+            disabled={disabled}
+            categories={categories}
+            getVotingPower={getVotingPower}
+            updateProposal={updateProposal}
+            deleteProposal={deleteProposal}
+            castVoteWithSwipe={handleVoteWithSwipe}
+            onDelegateProposal={onDelegateProposal}
+            onShowToast={() => {
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 4000);
+            }}
+        />
+    );
 
     const currentTinderProposal = unvotedProposals[clampedIndex];
 
@@ -679,7 +283,7 @@ export default function ProposalsList({
                                 </button>
 
                                 <div className="flex-1 w-full relative">
-                                    {currentTinderProposal && renderProposalCard(currentTinderProposal, true)}
+                                    {currentTinderProposal && renderCard(currentTinderProposal, true)}
                                 </div>
 
                                 <button
@@ -727,7 +331,7 @@ export default function ProposalsList({
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-8 duration-500">
-                            {votedProposals.map(proposal => renderProposalCard(proposal, false))}
+                            {votedProposals.map(proposal => renderCard(proposal, false))}
                         </div>
                     )
                 )}

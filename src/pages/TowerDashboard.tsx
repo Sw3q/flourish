@@ -1,6 +1,7 @@
 import { useTowerStats } from '../hooks/useTowerStats';
 import { Loader2, TrendingUp, Users, BadgeDollarSign, Building2, Activity } from 'lucide-react';
 import { FloorTreasuryChart, ActivityTrendChart } from '../components/Visualizations';
+import OffersAsksBoard from '../components/OffersAsksBoard';
 
 export default function TowerDashboard() {
     const {
@@ -36,6 +37,9 @@ export default function TowerDashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* Global Offers & Asks Board */}
+            <OffersAsksBoard mode="global" />
 
             {/* Dashboard Layout: Stats & Metrics */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">

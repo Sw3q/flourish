@@ -3,13 +3,14 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 41: Brand Kit Overhaul & Re-styling**: Update the UI styling and elements to match the existing Frontier Tower brand kit, replacing the current color palette with the new Frontier Violet and creating image placeholders for the new logos in `src/assets`.
+- **Phase 44: Implementation Follow-ups**: Monitor voting evaluation performance and consider UX enhancements for the Offer/Ask board.
 
 ## Upcoming Objectives
-- **Phase 40: Circular Delegation UI Blocker**: Add UI blocker to prevent users from delegating to peers who are already delegating back to them, avoiding circular delegation loops.
+- **Phase 41: Brand Kit Overhaul & Re-styling**: Update the UI styling and elements to match the existing Frontier Tower brand kit.
 - **Phase 39: Impact Visualization**: Enhance Hypercert displays and cross-floor impact tracking metrics.
 
 ## Completed Plans History
+- **Phase 43 (Offers/Asks Board)**: Implemented per-floor bulletin board with global aggregation and type-based filtering.
 - **Phase 42 (Interactive Treasury Visualization)**: Replaced bar chart with compact SVG donut chart and floor selection dropdown.
 - **Phase 37 (Proposal Enhancements)**: Implemented proposal editing for authors and a dedicated chat/comment interface for each proposal instance.
 - **Phase 37 (Admin Isolation)**: Hardened RLS to restrict floor admins to their own domain and enhanced super admin dashboard with building-wide floor labels.
@@ -24,4 +25,7 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 - **Phase 28 (Building Dashboard)**: Created data-rich `BuildingView.tsx` with global/floor stats and `useTowerStats.ts`.
 - **Phase 25 (Building View Navigation)**: Interactive tower navigation and multi-floor routing.
 - **Phase 24 (Multi-Floor Architecture)**: Multi-tenant system with `floor_id` scoping and super_admin access.
+- **Phase 45 (Admin Hardening)**: Implemented `reject_user` RPC for full user deletion and modularized `useAdminActions.ts`.
+- **Phase 44 (Codebase Cleanup)**: Decoupled `ProposalsList.tsx`, unified types in `src/types.ts`, and resolved all lint/TS errors.
+- **Phase 40 (Circular Delegation)**: Implemented UI blockers to prevent infinite delegation loops globally and per-proposal.
 - **Outdated Plans**: Tinder UI (23), Recurring Expenses (11, 14), Conviction Voting (12), Hypercerts (20, 21), Auth Bypass (19).
