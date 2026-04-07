@@ -264,6 +264,17 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         return false;
     };
 
+    const rejectUser = async (userId: string) => {
+        const { error } = await supabase.rpc('reject_user', { target_user_id: userId });
+
+        if (!error) {
+            setUsers(users.filter((u: Profile) => u.id !== userId));
+            return true;
+        }
+        console.error('rejectUser error:', error);
+        return false;
+    };
+
     const revokeUser = async (userId: string) => {
         const { error } = await supabase
             .from('profiles')
@@ -413,6 +424,7 @@ export function useAdminActions(currentFloorId: string | null, currentUserRole?:
         addFunds,
         setBalance,
         approveUser,
+        rejectUser,
         revokeUser,
         promoteUser,
         demoteUser,

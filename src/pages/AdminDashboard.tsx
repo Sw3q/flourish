@@ -31,6 +31,7 @@ export default function AdminDashboard() {
         createCategory,
         setBalance,
         approveUser,
+        rejectUser,
         revokeUser,
         promoteUser,
         demoteUser,
@@ -94,6 +95,11 @@ export default function AdminDashboard() {
     };
 
     const handleApprove = async (userId: string) => { await approveUser(userId); };
+    const handleReject = async (userId: string) => {
+        if (window.confirm('Are you sure you want to fully reject and delete this user? This action cannot be undone.')) {
+            await rejectUser(userId);
+        }
+    };
     const handleRevoke = async (userId: string) => { await revokeUser(userId); };
     const handlePromote = async (userId: string) => { await promoteUser(userId); };
     const handleDemote = async (userId: string) => { await demoteUser(userId); };
@@ -171,13 +177,22 @@ export default function AdminDashboard() {
                                     </div>
                                     <p className="text-xs text-slate-400 mt-1">Requested access recently</p>
                                 </div>
-                                <button
-                                    onClick={() => handleApprove(user.id)}
-                                    className="w-full flex items-center justify-center px-4 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800 rounded-xl font-medium transition-colors"
-                                >
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Approve Member
-                                </button>
+                                 <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleApprove(user.id)}
+                                        className="flex-1 flex items-center justify-center px-4 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800 rounded-xl font-medium transition-colors"
+                                    >
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => handleReject(user.id)}
+                                        className="flex-1 flex items-center justify-center px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 rounded-xl font-medium transition-colors shadow-sm"
+                                    >
+                                        <X className="w-4 h-4 mr-2" />
+                                        Reject
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

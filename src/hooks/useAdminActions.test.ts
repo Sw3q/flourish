@@ -390,6 +390,42 @@ describe('useAdminActions Hook', () => {
         ]);
         expect(result.current.fundBalance).toBe(600);
     });
+
+    it('should reject and delete a user successfully', async () => {
+        (supabase.auth.getUser as any).mockResolvedValue({ data: { user: { id: 'admin123' } } });
+        
+        const mockUser = { id: 'user123', email: 'user@test.com', role: 'member' as const, is_approved: false };
+        
+        // Mock the RPC call
+        (supabase.rpc as any).mockResolvedValue({ error: null });
+
+        // Robust mock for profiles queries
+        const mockProfiles = {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { role: 'admin' } }),
+            order: vi.fn().mockReturnThis(),
+            then: (cb: any) => Promise.resolve(cb({ data: [mockUser], error: null }))
+        };
+        (supabase.from as any).mockImplementation((table: string) => {
+            if (table === 'profiles') return mockProfiles;
+            return createBulletproofMock([]);
+        });
+
+        const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        expect(result.current.users.length).toBe(1);
+
+        let success;
+        await act(async () => {
+            success = await result.current.rejectUser('user123');
+        });
+
+        expect(success).toBe(true);
+        expect(supabase.rpc).toHaveBeenCalledWith('reject_user', { target_user_id: 'user123' });
+        expect(result.current.users.length).toBe(0);
+    });
 });
 
 describe('getNextBillingDate utility', () => {
