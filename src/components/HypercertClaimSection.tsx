@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Award, Check, X, Loader2, ExternalLink } from 'lucide-react';
 import { useHypercertClaims } from '../hooks/useHypercertClaims';
-import { useHypercerts } from '../hooks/useHypercerts';
+import { useHypercerts, type HypercertContributor } from '../hooks/useHypercerts';
 import type { Profile, OfferAsk } from '../types';
 
 interface Props {
@@ -23,6 +23,12 @@ export default function HypercertClaimSection({ post, currentUser }: Props) {
     const pending = claims.filter(c => c.status === 'pending');
     const issued = claims.filter(c => !!c.hypercert_uri);
 
+    // Only show claim/issue flow if both participants have configured identities
+    const hasAtProtoConfig = !!(post.profiles?.atproto_did && currentUser.atproto_did);
+
+    // If I'm not the creator, haven't claimed yet, and someone is missing config -> hide the whole widget
+    if (!isCreator && !myClaim && !hasAtProtoConfig) return null;
+
     const hyperscanUrl = (uri: string) => {
         // at://did:plc:xxx/collection/rkey  → did is parts[2]
         const did = uri.split('/')[2];
@@ -38,22 +44,75 @@ export default function HypercertClaimSection({ post, currentUser }: Props) {
     const handleIssue = async () => {
         if (!myClaim) return;
         setError(null);
+        
         if (!currentUser.atproto_handle || !currentUser.atproto_app_password) {
             setError('Configure your Bluesky credentials in the Dashboard first.');
             return;
         }
-        const result = await createHypercert(
+
+        // Build contributors array (Bi-directional)
+        const contributors: HypercertContributor[] = [];
+        const creatorProfile = post.profiles;
+        const creatorDid = creatorProfile?.atproto_did;
+        const claimantDid = currentUser.atproto_did;
+
+        if (creatorDid) {
+            contributors.push({
+                contributorIdentity: { identity: creatorDid },
+                contributionWeight: "1",
+                contributionDetails: { role: post.type === 'offer' ? "Fulfiller" : "Recipient" }
+            });
+        }
+
+        if (claimantDid && claimantDid !== creatorDid) {
+            contributors.push({
+                contributorIdentity: { identity: claimantDid },
+                contributionWeight: "1",
+                contributionDetails: { role: post.type === 'ask' ? "Fulfiller" : "Recipient" }
+            });
+        }
+
+        const claimPayload = {
+            title: post.title,
+            description: post.description,
+            shortDescription: post.type,
+            createdAt: new Date().toISOString(),
+            contributors: contributors.length > 0 ? contributors : undefined
+        };
+
+        // Double Issuance Flow
+        let primaryUri: string | null = null;
+
+        // 1. Issue to Claimant's repo
+        const claimantResult = await createHypercert(
             currentUser.atproto_handle,
             currentUser.atproto_app_password,
-            {
-                title: post.title,
-                description: post.description,
-                shortDescription: `Frontier Tower ${post.type}: ${post.title}`,
-                createdAt: new Date().toISOString(),
-            }
+            claimPayload
         );
-        if (result?.uri) await attachUri(myClaim.id, result.uri);
-        else setError('Failed to issue Hypercert on ATProto.');
+        
+        if (claimantResult?.uri) {
+            primaryUri = claimantResult.uri;
+        } else {
+            setError('Failed to issue to your repository.');
+            return;
+        }
+
+        // 2. Simultaneous issue to Creator's repo
+        if (creatorProfile?.atproto_handle && creatorProfile?.atproto_app_password) {
+            try {
+                await createHypercert(
+                    creatorProfile.atproto_handle,
+                    creatorProfile.atproto_app_password,
+                    claimPayload
+                );
+            } catch (err) {
+                console.error('Error during creator issuance:', err);
+            }
+        }
+
+        if (primaryUri) {
+            await attachUri(myClaim.id, primaryUri);
+        }
     };
 
     if (isCreator) {

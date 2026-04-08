@@ -13,7 +13,7 @@ export function useHypercertClaims(subjectType: string, subjectId?: string) {
         setLoading(true);
         const { data, error } = await supabase
             .from('hypercert_claims')
-            .select('*, claimant:profiles!hypercert_claims_claimant_id_fkey(email)')
+            .select('*, claimant:profiles!hypercert_claims_claimant_id_fkey(email, atproto_did)')
             .eq('subject_type', subjectType)
             .eq('subject_id', subjectId)
             .order('created_at', { ascending: false });

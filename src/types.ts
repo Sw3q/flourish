@@ -73,7 +73,7 @@ export type HypercertClaimRecord = {
     hypercert_uri: string | null;
     created_at: string;
     resolved_at: string | null;
-    claimant?: { email: string };
+    claimant?: { email: string; atproto_did?: string };
 };
 
 export type OfferAsk = {
@@ -85,6 +85,6 @@ export type OfferAsk = {
     floor_id: string;
     status: 'active' | 'completed';
     created_at: string;
-    profiles?: { email: string; atproto_handle?: string };
+    profiles?: { email: string; atproto_handle?: string; atproto_did?: string; atproto_app_password?: string };
     floors?: { name: string; floor_number: number };
 };

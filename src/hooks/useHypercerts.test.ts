@@ -5,16 +5,19 @@ import { BskyAgent } from '@atproto/api';
 
 // Mock @atproto/api
 vi.mock('@atproto/api', () => {
-  const BskyAgent = vi.fn();
-  BskyAgent.prototype.resolveHandle = vi.fn();
-  BskyAgent.prototype.login = vi.fn();
-  BskyAgent.prototype.com = {
-    atproto: {
-      repo: {
-        createRecord: vi.fn(),
+  const mockCreateRecord = vi.fn();
+  const BskyAgent = vi.fn(() => ({
+    resolveHandle: vi.fn(),
+    login: vi.fn(),
+    com: {
+      atproto: {
+        repo: {
+          createRecord: mockCreateRecord,
+        },
       },
     },
-  };
+    session: { did: 'did:plc:123' }
+  }));
   return { BskyAgent };
 });
 
@@ -42,10 +45,11 @@ describe('useHypercerts Hook', () => {
     const mockUri = 'at://did:plc:123/org.hypercerts.claim.activity/abc';
     const mockCid = 'cid-123';
 
-    (BskyAgent.prototype.login as any).mockResolvedValueOnce({});
     // Mock the session getter
-    Object.defineProperty(BskyAgent.prototype, 'session', {
-      get: () => ({ did: mockDid }),
+    const agentInstance = (BskyAgent as any).mock.results[0].value;
+    agentInstance.login.mockResolvedValueOnce({});
+    agentInstance.com.atproto.repo.createRecord.mockResolvedValueOnce({
+      data: { uri: mockUri, cid: mockCid }
     });
 
     (BskyAgent.prototype.com.atproto.repo.createRecord as any).mockResolvedValueOnce({
@@ -74,6 +78,42 @@ describe('useHypercerts Hook', () => {
       identifier: 'test.bsky.social',
       password: 'password',
     });
+  });
+  
+  it('should include contributors in the record if provided', async () => {
+    const mockDid = 'did:plc:123';
+    (BskyAgent.prototype.login as any).mockResolvedValueOnce({});
+    Object.defineProperty(BskyAgent.prototype, 'session', {
+      get: () => ({ did: mockDid }),
+      configurable: true
+    });
+
+    (BskyAgent.prototype.com.atproto.repo.createRecord as any).mockResolvedValueOnce({
+      data: { uri: 'at://123', cid: 'cid-123' }
+    });
+
+    const { result } = renderHook(() => useHypercerts());
+    const contributors = [
+      { contributorIdentity: { identity: 'did:plc:creator' }, contributionDetails: { role: 'Fulfiller' } }
+    ];
+
+    await act(async () => {
+      await result.current.createHypercert('test.bsky.social', 'password', {
+        title: 'Test',
+        description: 'Test',
+        shortDescription: 'Short',
+        createdAt: new Date().toISOString(),
+        contributors
+      });
+    });
+
+    expect(BskyAgent.prototype.com.atproto.repo.createRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        record: expect.objectContaining({
+          contributors
+        })
+      })
+    );
   });
 
   it('should handle creation errors', async () => {

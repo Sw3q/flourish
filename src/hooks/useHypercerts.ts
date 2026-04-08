@@ -5,6 +5,12 @@ import { supabase } from '../lib/supabase';
 // Manually define the lexicon ID
 const HYPERCERT_COLLECTION = 'org.hypercerts.claim.activity';
 
+export type HypercertContributor = {
+  contributorIdentity: { identity: string };
+  contributionWeight?: string;
+  contributionDetails?: { role: string };
+};
+
 export type HypercertClaim = {
   title: string;
   description: string;
@@ -13,6 +19,7 @@ export type HypercertClaim = {
   image?: {
     uri: string;
   };
+  contributors?: HypercertContributor[];
 };
 
 export function useHypercerts() {

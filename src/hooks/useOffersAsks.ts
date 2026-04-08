@@ -14,7 +14,7 @@ export function useOffersAsks(floorId?: string, limit: number = 20) {
             .from('offers_asks')
             .select(`
                 *,
-                profiles (email, atproto_handle),
+                profiles (email, atproto_handle, atproto_did, atproto_app_password),
                 floors (name, floor_number)
             `)
             .in('status', ['active', 'completed'])
