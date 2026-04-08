@@ -3,13 +3,12 @@
 Use this workspace to draft and refine high-level plans, especially in Plan Mode.
 
 ## Current Objective
-- **Phase 46: Hypercert Claims for Offers/Asks**: Add a modular, polymorphic Hypercert claim flow allowing any approved member (non-creator) to request a Hypercert on a *completed* offer/ask. Creator approves/denies inline; on approval the claimant issues an ATProto record via existing `useHypercerts`. Designed as a generic `hypercert_claims` table keyed by `subject_type`/`subject_id` so future subjects (events, deliverables, etc.) reuse the same plumbing.
+- **Phase 48: Social Integration & Building Feed**: Audit building-wide activity feed for performance with large datasets and extend Offer/Ask filtering to include keyword search and category tags.
 
-## Phase 46 Architecture
-- **DB**: New `hypercert_claims` table — `(id, subject_type, subject_id, claimant_id, creator_id, status, hypercert_uri, created_at, resolved_at)`. Unique on `(subject_type, subject_id, claimant_id)`. RLS: claimant inserts pending only against `completed` offers/asks where `creator_id` matches the subject's owner; creator updates status; claimant attaches uri after approval.
-- **Hook**: `useHypercertClaims(subjectType, subjectId)` — `claims, requestClaim, resolveClaim, attachUri`. Reuses `useHypercerts.createHypercert` for the actual ATProto record (no duplication).
-- **UI**: `HypercertClaimSection` rendered inline at the bottom of each completed offer/ask card. Three states: non-creator (Claim button → pending → approved → Issue → Hypercert link), creator (pending claims list with ✓/✗).
-- **OffersAsks fetch**: Now returns `active` and `completed` posts in the 7-day window so completed cards remain visible for claim resolution.
+## Phase 47 Evolution (Bi-directional)
+- **Double Issuance**: Refactored the claim flow to issue Hypercerts to both the claimant and the creator simultaneously.
+- **Visibility Guard**: Enrollment is now gated on both parties having configured their `atproto_did`.
+- **Simplified Schema**: Tags were simplified to just `"offer"` or `"ask"` for easier indexing.
 
 ## Upcoming Objectives
 - **Phase 44: Implementation Follow-ups**: Monitor voting evaluation performance and consider UX enhancements for the Offer/Ask board.
@@ -19,6 +18,8 @@ Use this workspace to draft and refine high-level plans, especially in Plan Mode
 - **Phase 39: Impact Visualization**: Enhance Hypercert displays and cross-floor impact tracking metrics.
 
 ## Completed Plans History
+- **Phase 47 (Bi-directional Hypercerts)**: Refactored issuance for dual-participant fulfillment and enforced ATProto configuration guards.
+- **Phase 46 (Hypercert Claims for Offers/Asks)**: Implemented polymorphic claim table, automated role assignment, and initial ATProto integration.
 - **Phase 43 (Offers/Asks Board)**: Implemented per-floor bulletin board with global aggregation and type-based filtering.
 - **Phase 42 (Interactive Treasury Visualization)**: Replaced bar chart with compact SVG donut chart and floor selection dropdown.
 - **Phase 37 (Proposal Enhancements)**: Implemented proposal editing for authors and a dedicated chat/comment interface for each proposal instance.

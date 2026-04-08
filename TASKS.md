@@ -3,16 +3,11 @@
 Use this document to break down plans into atomic, checklist-style tasks with checkboxes for tracking progress.
 
 ## Current Tasks
-- [ ] **Phase 46: Hypercert Claims for Offers/Asks**
-    - [ ] 1. Migration `20260408000001_hypercert_claims.sql` — modular polymorphic table + RLS gated on completed offer/ask ownership.
-    - [ ] 2. Add `HypercertClaimRecord` type to `src/types.ts`.
-    - [ ] 3. `useHypercertClaims` hook (fetch / request / resolve / attachUri) + unit tests.
-    - [ ] 4. `HypercertClaimSection` component covering non-creator claim flow and creator approve/deny inline + render tests.
-    - [ ] 5. Extend `useOffersAsks` to fetch active+completed within 7-day window; update existing tests.
-    - [ ] 6. Wire `HypercertClaimSection` into `OffersAsksBoard` cards (completed-only).
-- [ ] **Phase 44: Implementation Follow-ups**
-    - [ ] 1. Monitor real-world performance of the conviction voting evaluation loops.
-    - [ ] 2. Extend Offer/Ask filtering to include keyword search.
+- **Phase 47 (Bi-directional Hypercerts)**: Implemented simultaneous double-issuance logic, simplified schema tags, and added identity-based visibility configuration guards.
+- **Phase 46 (Hypercert Claims for Offers/Asks)**: Implemented polymorphic claim table, automated role assignment (Fulfiller/Recipient), and ATProto repository integration.
+- [ ] **Phase 48: Social Integration & Building Feed**
+    - [ ] 1. Audit building-wide activity feed for performance with large datasets.
+    - [ ] 2. Extend Offer/Ask filtering to include keyword search and category tags.
 - [ ] **Phase 38: Governance Audit**
     - [ ] 1. Explore global vs floor-specific voting power configurations for super_admins.
     - [ ] 2. Audit delegation override logic for edge cases in multi-floor scenarios.

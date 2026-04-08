@@ -10,7 +10,9 @@ The Flourish Fund is a React/Vite/TypeScript web application managing a communal
 *   **Passage Thresholds**: Pass if `Yes > No` AND `Quorum (40%)` is met. Implementation uses **Conviction Voting**: a proposal passes automatically ONLY after maintaining majority + quorum for a sustained 24-hour period (`quorum_reached_at`).
 *   **Virtual Funds**: Fund tracking is virtual, consisting of manual deposits from admins and automatic withdrawals when proposals pass.
 *   **Recurring Expenses**: Admins can define and manage monthly recurring expenses, which are manually processed to deduct from the communal pot, providing transparency to all users on the dashboard.
-*   **Hypercerts (Impact Tracking)**: Impact records can be issued for passed proposals using the AT Protocol. Issuance power is decentralized: any approved member who participated in the proposal (directly or through delegation) can link their identity and issue a Hypercert (`HypercertIssuanceModal.tsx`, `useHypercerts.ts`).
+*   **Hypercerts (Impact Tracking)**: Impact records can be issued for passed proposals and completed Offers/Asks using the AT Protocol.
+    *   **Proposals**: Issuance is decentralized to participants of a passed proposal (`HypercertIssuanceModal.tsx`, `useHypercerts.ts`).
+    *   **Offers & Asks**: Issuance is **bi-directional and simultaneous**. On claim approval, the system issues a Hypercert to both the claimant and the creator's ATProto repositories. Enrollment is strictly gated on both parties having configured their identity (`atproto_did`).
 *   **Offers & Asks Board**: A community bulletin board for floor-local and building-wide requests. Features 7-day expiration and type-based filtering (Offers/Asks) at the top of the dashboard (`OffersAsksBoard.tsx`, `useOffersAsks.ts`).
 
 *   **Building Navigation**: The primary entry point is the `TowerDashboard.tsx` (accessible via `/building`), which features global activity visualizations and floor-by-floor treasury distributions. Individual floor dashboards are accessed via `/floor/:floorId`.

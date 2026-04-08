@@ -1,25 +1,24 @@
 import { renderHook, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useHypercerts } from './useHypercerts';
-import { BskyAgent } from '@atproto/api';
 
 // Mock @atproto/api
-vi.mock('@atproto/api', () => {
-  const mockCreateRecord = vi.fn();
-  const BskyAgent = vi.fn(() => ({
-    resolveHandle: vi.fn(),
-    login: vi.fn(),
-    com: {
-      atproto: {
-        repo: {
-          createRecord: mockCreateRecord,
-        },
+const mockAgent = {
+  resolveHandle: vi.fn(),
+  login: vi.fn(),
+  com: {
+    atproto: {
+      repo: {
+        createRecord: vi.fn(),
       },
     },
-    session: { did: 'did:plc:123' }
-  }));
-  return { BskyAgent };
-});
+  },
+  session: { did: 'did:plc:123' }
+};
+
+vi.mock('@atproto/api', () => ({
+  BskyAgent: vi.fn(() => mockAgent)
+}));
 
 describe('useHypercerts Hook', () => {
   beforeEach(() => {
@@ -28,7 +27,7 @@ describe('useHypercerts Hook', () => {
 
   it('should resolve handle correctly', async () => {
     const mockDid = 'did:plc:123';
-    (BskyAgent.prototype.resolveHandle as any).mockResolvedValueOnce({ data: { did: mockDid } });
+    mockAgent.resolveHandle.mockResolvedValueOnce({ data: { did: mockDid } });
 
     const { result } = renderHook(() => useHypercerts());
     let did;
@@ -37,7 +36,7 @@ describe('useHypercerts Hook', () => {
     });
 
     expect(did).toBe(mockDid);
-    expect(BskyAgent.prototype.resolveHandle).toHaveBeenCalledWith({ handle: 'test.bsky.social' });
+    expect(mockAgent.resolveHandle).toHaveBeenCalledWith({ handle: 'test.bsky.social' });
   });
 
   it('should create hypercert correctly', async () => {
@@ -45,14 +44,8 @@ describe('useHypercerts Hook', () => {
     const mockUri = 'at://did:plc:123/org.hypercerts.claim.activity/abc';
     const mockCid = 'cid-123';
 
-    // Mock the session getter
-    const agentInstance = (BskyAgent as any).mock.results[0].value;
-    agentInstance.login.mockResolvedValueOnce({});
-    agentInstance.com.atproto.repo.createRecord.mockResolvedValueOnce({
-      data: { uri: mockUri, cid: mockCid }
-    });
-
-    (BskyAgent.prototype.com.atproto.repo.createRecord as any).mockResolvedValueOnce({
+    mockAgent.login.mockResolvedValueOnce({});
+    mockAgent.com.atproto.repo.createRecord.mockResolvedValueOnce({
       data: { uri: mockUri, cid: mockCid }
     });
 
@@ -74,7 +67,7 @@ describe('useHypercerts Hook', () => {
       cid: mockCid,
       did: mockDid,
     });
-    expect(BskyAgent.prototype.login).toHaveBeenCalledWith({
+    expect(mockAgent.login).toHaveBeenCalledWith({
       identifier: 'test.bsky.social',
       password: 'password',
     });
@@ -82,13 +75,11 @@ describe('useHypercerts Hook', () => {
   
   it('should include contributors in the record if provided', async () => {
     const mockDid = 'did:plc:123';
-    (BskyAgent.prototype.login as any).mockResolvedValueOnce({});
-    Object.defineProperty(BskyAgent.prototype, 'session', {
-      get: () => ({ did: mockDid }),
-      configurable: true
-    });
+    mockAgent.login.mockResolvedValueOnce({});
+    
+    mockAgent.session = { did: mockDid };
 
-    (BskyAgent.prototype.com.atproto.repo.createRecord as any).mockResolvedValueOnce({
+    mockAgent.com.atproto.repo.createRecord.mockResolvedValueOnce({
       data: { uri: 'at://123', cid: 'cid-123' }
     });
 
@@ -107,7 +98,7 @@ describe('useHypercerts Hook', () => {
       });
     });
 
-    expect(BskyAgent.prototype.com.atproto.repo.createRecord).toHaveBeenCalledWith(
+    expect(mockAgent.com.atproto.repo.createRecord).toHaveBeenCalledWith(
       expect.objectContaining({
         record: expect.objectContaining({
           contributors
@@ -117,12 +108,12 @@ describe('useHypercerts Hook', () => {
   });
 
   it('should handle creation errors', async () => {
-    (BskyAgent.prototype.login as any).mockRejectedValueOnce(new Error('Auth failed'));
+    mockAgent.login.mockRejectedValueOnce(new Error('Auth failed'));
 
     const { result } = renderHook(() => useHypercerts());
     let hypercert;
     await act(async () => {
-      hypercert = await result.current.createHypercert('test.bsky.social', 'bad-pass', {} as any);
+      hypercert = await result.current.createHypercert('test.bsky.social', 'bad-pass', {} as Parameters<typeof result.current.createHypercert>[2]);
     });
 
     expect(hypercert).toBeNull();

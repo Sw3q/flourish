@@ -36,7 +36,7 @@ const mockProposal2 = {
 const defaultProps = {
     currentUserId: 'user-1',
     currentFloorId: 'floor-1',
-    members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: null, role: 'member' }],
+    members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: null, role: 'member' as const, is_approved: true, floor_id: 'floor-1' }],
     proposalDelegations: {},
     globalDelegatedTo: null,
     onDelegateProposal: vi.fn(),
@@ -124,7 +124,7 @@ describe('ProposalsList Component — Delegation Rendering', () => {
     it('disables per-proposal delegation when peer delegates globally to current user', async () => {
         const circularProps = {
             ...defaultProps,
-            members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: 'user-1', role: 'member' }],
+            members: [{ id: 'user-2', email: 'user2@test.com', delegated_to: 'user-1', role: 'member' as const, is_approved: true, floor_id: 'floor-1' }],
         };
         render(<ProposalsList {...circularProps} />);
 

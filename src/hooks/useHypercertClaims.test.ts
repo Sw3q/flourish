@@ -1,4 +1,3 @@
-// @ts-expect-error - waitFor is sometimes missing from types in this env
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useHypercertClaims } from './useHypercertClaims';

@@ -35,6 +35,7 @@ const post: OfferAsk = {
     floor_id: 'f1',
     status: 'completed',
     created_at: new Date().toISOString(),
+    profiles: { email: 'creator@example.com', atproto_did: 'did:plc:creator' },
 };
 
 const baseUser: Profile = {
@@ -44,6 +45,7 @@ const baseUser: Profile = {
     is_approved: true,
     floor_id: 'f1',
     delegated_to: null,
+    atproto_did: 'did:plc:user-1',
 };
 
 describe('HypercertClaimSection', () => {
