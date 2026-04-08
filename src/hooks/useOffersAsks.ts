@@ -17,7 +17,7 @@ export function useOffersAsks(floorId?: string, limit: number = 20) {
                 profiles (email, atproto_handle),
                 floors (name, floor_number)
             `)
-            .eq('status', 'active')
+            .in('status', ['active', 'completed'])
             .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
             .order('created_at', { ascending: false });
 
@@ -80,8 +80,6 @@ export function useOffersAsks(floorId?: string, limit: number = 20) {
             .eq('id', postId);
             
         if (!error) {
-            setPosts(posts.filter(p => p.id !== postId || status === 'active'));
-            // Refetch to be safe
             await fetchPosts();
             return true;
         }

@@ -63,6 +63,19 @@ export type Transaction = {
     created_at: string;
 };
 
+export type HypercertClaimRecord = {
+    id: string;
+    subject_type: string;
+    subject_id: string;
+    claimant_id: string;
+    creator_id: string;
+    status: 'pending' | 'approved' | 'denied';
+    hypercert_uri: string | null;
+    created_at: string;
+    resolved_at: string | null;
+    claimant?: { email: string };
+};
+
 export type OfferAsk = {
     id: string;
     type: 'offer' | 'ask';

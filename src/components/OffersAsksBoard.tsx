@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOffersAsks } from '../hooks/useOffersAsks';
 import { Plus, MessageSquare, Tag, HandHeart, Briefcase } from 'lucide-react';
 import type { Profile } from '../types';
+import HypercertClaimSection from './HypercertClaimSection';
 
 interface OffersAsksBoardProps {
     floorId?: string;
@@ -231,6 +232,7 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                                         </a>
                                     )}
                                 </div>
+                                <HypercertClaimSection post={post} currentUser={currentUser} />
                             </div>
                         );
                     })}

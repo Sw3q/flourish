@@ -35,9 +35,9 @@ describe('useOffersAsks', () => {
             })
         });
 
-        const mockEq = vi.fn().mockReturnValue({ gte: mockGte });
+        const mockIn = vi.fn().mockReturnValue({ gte: mockGte });
         (supabase.from as any).mockReturnValue({
-            select: vi.fn().mockReturnValue({ eq: mockEq }) // status filter eq
+            select: vi.fn().mockReturnValue({ in: mockIn })
         });
 
         const { result } = renderHook(() => useOffersAsks('floor1'));
@@ -51,7 +51,7 @@ describe('useOffersAsks', () => {
 
         expect(result.current.posts).toEqual(mockPosts);
         expect(supabase.from).toHaveBeenCalledWith('offers_asks');
-        expect(mockEq).toHaveBeenCalledWith('status', 'active');
+        expect(mockIn).toHaveBeenCalledWith('status', ['active', 'completed']);
         expect(mockGte).toHaveBeenCalledWith('created_at', expect.any(String));
         expect(supabase.channel).toHaveBeenCalledWith('offers_asks_changes');
     });
@@ -66,10 +66,10 @@ describe('useOffersAsks', () => {
         const mockGte = vi.fn().mockReturnValue({
             order: vi.fn().mockReturnValue({ limit: mockLimit })
         });
-        const mockEq = vi.fn().mockReturnValue({ gte: mockGte });
+        const mockIn = vi.fn().mockReturnValue({ gte: mockGte });
 
         (supabase.from as any).mockReturnValue({
-            select: vi.fn().mockReturnValue({ eq: mockEq }) // status filter eq
+            select: vi.fn().mockReturnValue({ in: mockIn })
         });
 
         const { result } = renderHook(() => useOffersAsks(undefined, 10));
@@ -91,12 +91,12 @@ describe('useOffersAsks', () => {
             })
         });
 
-        const mockEq = vi.fn().mockReturnValue({ gte: mockGte });
+        const mockIn = vi.fn().mockReturnValue({ gte: mockGte });
 
         (supabase.from as any).mockImplementation((table: string) => {
             if (table === 'offers_asks') {
                 return {
-                    select: vi.fn().mockReturnValue({ eq: mockEq }),
+                    select: vi.fn().mockReturnValue({ in: mockIn }),
                     insert: mockInsert
                 };
             }
@@ -132,12 +132,12 @@ describe('useOffersAsks', () => {
             })
         });
 
-        const mockEqSelect = vi.fn().mockReturnValue({ gte: mockGte });
+        const mockInSelect = vi.fn().mockReturnValue({ gte: mockGte });
         const mockEqUpdate = vi.fn().mockResolvedValue({ error: null });
 
         (supabase.from as any).mockImplementation((_table: string) => {
             return {
-                select: vi.fn().mockReturnValue({ eq: mockEqSelect }),
+                select: vi.fn().mockReturnValue({ in: mockInSelect }),
                 update: vi.fn().mockReturnValue({ eq: mockEqUpdate })
             };
         });

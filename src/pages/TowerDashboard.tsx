@@ -2,6 +2,7 @@ import { useTowerStats } from '../hooks/useTowerStats';
 import { Loader2, TrendingUp, Users, BadgeDollarSign, Building2, Activity } from 'lucide-react';
 import { FloorTreasuryChart, ActivityTrendChart } from '../components/Visualizations';
 import OffersAsksBoard from '../components/OffersAsksBoard';
+import { useDashboardData } from '../hooks/useDashboardData';
 
 export default function TowerDashboard() {
     const {
@@ -12,6 +13,7 @@ export default function TowerDashboard() {
         governanceIntensity,
         loading
     } = useTowerStats();
+    const { currentUser } = useDashboardData();
 
     if (loading) {
         return (
@@ -39,7 +41,7 @@ export default function TowerDashboard() {
             </header>
 
             {/* Global Offers & Asks Board */}
-            <OffersAsksBoard mode="global" />
+            <OffersAsksBoard mode="global" currentUser={currentUser ?? undefined} />
 
             {/* Dashboard Layout: Stats & Metrics */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
