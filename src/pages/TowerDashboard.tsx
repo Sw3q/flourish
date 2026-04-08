@@ -41,7 +41,7 @@ export default function TowerDashboard() {
             </header>
 
             {/* Global Offers & Asks Board */}
-            <OffersAsksBoard mode="global" currentUser={currentUser ?? undefined} />
+            <OffersAsksBoard mode="global" currentUser={currentUser ?? undefined} limit={3} />
 
             {/* Dashboard Layout: Stats & Metrics */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">

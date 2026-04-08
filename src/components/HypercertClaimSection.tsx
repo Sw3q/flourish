@@ -172,12 +172,18 @@ export default function HypercertClaimSection({ post, currentUser }: Props) {
         <div className="mt-3 pt-3 border-t border-slate-100">
             {error && <div className="text-[10px] text-rose-600 mb-1">{error}</div>}
             {!myClaim && (
-                <button
-                    onClick={handleRequest}
-                    className="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded bg-primary-50 text-primary-700 hover:bg-primary-100"
-                >
-                    <Award className="w-3 h-3" /> Claim HyperCert
-                </button>
+                post.status === 'completed' ? (
+                    <button
+                        onClick={handleRequest}
+                        className="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded bg-primary-50 text-primary-700 hover:bg-primary-100"
+                    >
+                        <Award className="w-3 h-3" /> Claim HyperCert
+                    </button>
+                ) : (
+                    <div className="text-[10px] text-center text-slate-400 font-medium py-1">
+                        Must be fulfilled to claim impact
+                    </div>
+                )
             )}
             {myClaim?.status === 'pending' && (
                 <div className="text-[10px] text-center text-slate-500 font-medium">

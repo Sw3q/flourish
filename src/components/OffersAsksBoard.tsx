@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useOffersAsks } from '../hooks/useOffersAsks';
 import { Plus, MessageSquare, Tag, HandHeart, Briefcase } from 'lucide-react';
 import type { Profile } from '../types';
@@ -9,11 +10,14 @@ interface OffersAsksBoardProps {
     mode: 'local' | 'global';
     currentUser?: Profile;
     floorName?: string;
+    limit?: number; // Added to support "Latest 3" view
 }
 
-export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAsksBoardProps) {
-    const { posts, loading, createPost, updatePostStatus } = useOffersAsks(floorId, 15);
+export default function OffersAsksBoard({ floorId, mode, currentUser, limit }: OffersAsksBoardProps) {
+    const { posts, loading, createPost, updatePostStatus } = useOffersAsks(floorId, limit ? 15 : 50);
     const [filter, setFilter] = useState<'all' | 'offer' | 'ask'>('all');
+    const [statusTab, setStatusTab] = useState<'active' | 'completed'>('active');
+    const [isExpanded, setIsExpanded] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newType, setNewType] = useState<'offer' | 'ask'>('offer');
     const [newTitle, setNewTitle] = useState('');
@@ -46,7 +50,15 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
         return null; // Don't show anything on the global view if there are no posts.
     }
 
-    const displayedPosts = posts.filter(p => filter === 'all' || p.type === filter);
+    const activePosts = posts.filter(p => p.status === 'active');
+    const completedPosts = posts.filter(p => p.status === 'completed');
+    
+    const postsForCurrentTab = statusTab === 'active' ? activePosts : completedPosts;
+    const filteredPosts = postsForCurrentTab.filter(p => filter === 'all' || p.type === filter);
+    
+    // For non-expanded mode on tower dashboard, only show the first N posts
+    const displayedPosts = (limit && !isExpanded) ? filteredPosts.slice(0, limit) : filteredPosts;
+    const hasMore = limit && filteredPosts.length > limit;
 
     return (
         <div className="w-full mb-12">
@@ -63,14 +75,40 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                     </p>
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    {/* Status Tabs (Live vs Fulfilled) */}
+                    <div className="flex bg-slate-100 p-1 rounded-full shadow-inner w-full md:w-auto">
+                        <button
+                            onClick={() => setStatusTab('active')}
+                            className={`flex-1 md:flex-none px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                                statusTab === 'active'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                            Live
+                        </button>
+                        <button
+                            onClick={() => setStatusTab('completed')}
+                            className={`flex-1 md:flex-none px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                                statusTab === 'completed'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                            Fulfilled
+                        </button>
+                    </div>
+
+                    <div className="h-6 w-[1px] bg-slate-200 hidden md:block"></div>
+
                     {posts.length > 0 && (
-                        <div className="flex bg-slate-100 p-1 rounded-full shadow-inner">
+                        <div className="flex bg-slate-100 p-1 rounded-full shadow-inner w-full md:w-auto">
                             {['all', 'offer', 'ask'].map(f => (
                                 <button
                                     key={f}
                                     onClick={() => setFilter(f as any)}
-                                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    className={`flex-1 md:flex-none px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
                                         filter === f
                                         ? 'bg-white text-slate-900 shadow-sm'
                                         : 'text-slate-400 hover:text-slate-600'
@@ -84,7 +122,7 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                     {mode === 'local' && currentUser && (
                         <button
                             onClick={() => setIsCreating(!isCreating)}
-                            className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-full font-black uppercase tracking-widest text-[9px] transition-all shadow-sm border ${
+                            className={`flex items-center justify-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-full font-black uppercase tracking-widest text-[9px] transition-all shadow-sm border w-full md:w-auto ${
                                 isCreating 
                                 ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' 
                                 : 'bg-primary-50 text-primary-700 border-primary-100 hover:bg-primary-100 hover:text-primary-800'
@@ -181,22 +219,43 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                     {displayedPosts.map(post => {
                         const isOffer = post.type === 'offer';
                         const isCreator = currentUser?.id === post.creator_id;
+                        const isCompleted = post.status === 'completed';
                         
                         return (
                             <div 
                                 key={post.id} 
-                                className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm flex flex-col group hover:border-primary-200 transition-colors"
+                                className={`bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm flex flex-col group hover:border-primary-200 transition-all ${
+                                    isCompleted ? 'opacity-60 grayscale-[0.2] bg-slate-50/50' : ''
+                                }`}
                             >
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                                        isOffer 
-                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                                        : 'bg-rose-50 text-rose-600 border border-rose-100'
-                                    }`}>
-                                        {post.type}
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
+                                            isOffer 
+                                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                                            : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                        }`}>
+                                            {post.type}
+                                        </div>
+                                        {isCompleted && (
+                                            <div className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">
+                                                ✓ Done
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="text-[10px] font-medium text-slate-400">
-                                        {new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    <div className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5 translate-y-0.5">
+                                        {post.floors && (
+                                            <>
+                                                <Link 
+                                                    to={`/floor/${post.floor_id}`}
+                                                    className="font-black text-slate-500 uppercase tracking-widest text-[8px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 transition-all hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900"
+                                                >
+                                                    F{post.floors.floor_number}
+                                                </Link>
+                                                <span className="opacity-50">·</span>
+                                            </>
+                                        )}
+                                        <span>{new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                                     </div>
                                 </div>
                                 
@@ -214,18 +273,21 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                                         </div>
                                         <div className="flex flex-col truncate">
                                             <span className="text-xs font-bold text-slate-700 truncate">{post.profiles?.email.split('@')[0]}</span>
-                                            {mode === 'global' && post.floors && (
-                                                <span className="text-[9px] text-slate-400 uppercase tracking-wider font-bold truncate">Floor {post.floors.floor_number}</span>
-                                            )}
                                         </div>
                                     </div>
                                     {isCreator ? (
-                                        <button
-                                            onClick={() => updatePostStatus(post.id, 'completed')}
-                                            className="ml-2 text-[10px] font-bold text-primary-600 hover:text-primary-800 hover:bg-primary-50 px-2 py-1 rounded transition-colors whitespace-nowrap uppercase tracking-wider"
-                                        >
-                                            Mark Done
-                                        </button>
+                                        isCompleted ? (
+                                            <div className="ml-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                Fulfilled
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => updatePostStatus(post.id, 'completed')}
+                                                className="ml-2 text-[10px] font-bold text-primary-600 hover:text-primary-800 hover:bg-primary-50 px-2 py-1 rounded transition-colors whitespace-nowrap uppercase tracking-wider"
+                                            >
+                                                Mark Done
+                                            </button>
+                                        )
                                     ) : (
                                         <a href={`mailto:${post.profiles?.email}`} className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-50 hover:bg-primary-50 text-slate-400 hover:text-primary-600 flex items-center justify-center transition-colors">
                                             <MessageSquare className="w-4 h-4" />
@@ -236,6 +298,123 @@ export default function OffersAsksBoard({ floorId, mode, currentUser }: OffersAs
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Expand / View All Button */}
+            {hasMore && !isExpanded && (
+                <div className="mt-10 flex justify-center">
+                    <button
+                        onClick={() => setIsExpanded(true)}
+                        className="px-10 py-4 rounded-full bg-white border border-slate-200 text-slate-900 font-black uppercase tracking-widest text-[10px] hover:border-primary-600 hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                        Explore Full Board
+                    </button>
+                </div>
+            )}
+
+            {/* Expansion Modal */}
+            {isExpanded && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl" onClick={() => setIsExpanded(false)}></div>
+                    <div className="bg-[#FAF9F6] w-full max-w-7xl h-full max-h-[90vh] rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col border border-white/20">
+                        {/* Modal Header */}
+                        <div className="p-8 md:p-10 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-[#FAF9F6]/80 backdrop-blur-md z-20">
+                            <div>
+                                <h3 className="text-3xl font-display font-black text-slate-900 tracking-tight">Community Exchange</h3>
+                                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mt-1 opacity-60">Full Listing History</p>
+                            </div>
+                            <button 
+                                onClick={() => setIsExpanded(false)}
+                                className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors shadow-sm"
+                            >
+                                <Plus className="w-6 h-6 rotate-45" />
+                            </button>
+                        </div>
+                        
+                        {/* Modal Content - Internal Scroll */}
+                        <div className="p-8 md:p-10 overflow-y-auto flex-1 custom-modal-scrollbar">
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {filteredPosts.map(post => {
+                                    const isOffer = post.type === 'offer';
+                                    const isCreator = currentUser?.id === post.creator_id;
+                                    const isCompleted = post.status === 'completed';
+                                    
+                                    return (
+                                        <div 
+                                            key={post.id} 
+                                            className={`bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm flex flex-col transition-all overflow-hidden ${
+                                                isCompleted ? 'opacity-60 grayscale-[0.2] bg-slate-50/50' : ''
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between mb-6">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
+                                                        isOffer 
+                                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                                                        : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                                    }`}>
+                                                        {post.type}
+                                                    </div>
+                                                    {isCompleted && (
+                                                        <div className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">
+                                                            ✓ Done
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5">
+                                                    {post.floors && (
+                                                        <span className="font-black text-slate-500 uppercase tracking-widest text-[8px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                                                            F{post.floors.floor_number}
+                                                        </span>
+                                                    )}
+                                                    <span>{new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <h3 className="text-xl font-display font-extrabold text-slate-900 leading-tight mb-4">
+                                                {post.title}
+                                            </h3>
+                                            <p className="text-sm text-slate-500 flex-1 mb-8 leading-relaxed">
+                                                {post.description}
+                                            </p>
+
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-auto">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex flex-shrink-0 items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
+                                                        {post.profiles?.email.charAt(0)}
+                                                    </div>
+                                                    <span className="text-xs font-bold text-slate-700">{post.profiles?.email.split('@')[0]}</span>
+                                                </div>
+                                                {isCreator ? (
+                                                    isCompleted ? (
+                                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Fulfilled</span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => updatePostStatus(post.id, 'completed')}
+                                                            className="text-[10px] font-black text-primary-600 hover:text-primary-800 uppercase tracking-widest"
+                                                        >
+                                                            Mark Done
+                                                        </button>
+                                                    )
+                                                ) : (
+                                                    <a href={`mailto:${post.profiles?.email}`} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-primary-50 text-slate-400 hover:text-primary-600 flex items-center justify-center transition-colors">
+                                                        <MessageSquare className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                            <HypercertClaimSection post={post} currentUser={currentUser} />
+                                        </div>
+                                    );
+                                })}
+                           </div>
+                        </div>
+                    </div>
+                    <style>{`
+                        .custom-modal-scrollbar::-webkit-scrollbar { width: 6px; }
+                        .custom-modal-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                        .custom-modal-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
+                    `}</style>
                 </div>
             )}
         </div>
