@@ -355,39 +355,37 @@ describe('useAdminActions Hook', () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
 
-        const mockInsert = vi.fn().mockResolvedValueOnce({ error: null });
-        (supabase.from as any).mockReturnValue({ insert: mockInsert, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
+        const mockEq = vi.fn().mockResolvedValueOnce({ error: null });
+        const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+        (supabase.from as any).mockReturnValue({ update: mockUpdate, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
 
         let success;
         await act(async () => {
-            // Raise balance from 500 to 800 → should insert deposit of 300
-            success = await result.current.setBalance(800, 500);
+            success = await result.current.setBalance(800);
         });
 
         expect(success).toBe(null);
-        expect(mockInsert).toHaveBeenCalledWith([
-            { amount: 300, type: 'deposit', description: 'Admin Balance Adjustment (deposit)', floor_id: 'floor1' }
-        ]);
+        expect(mockUpdate).toHaveBeenCalledWith({ balance: 800 });
+        expect(mockEq).toHaveBeenCalledWith('id', 'floor1');
         expect(result.current.fundBalance).toBe(800);
     });
 
-    it('should setBalance by inserting a withdrawal for a negative delta', async () => {
+    it('should setBalance to a lower value via floors update', async () => {
         (supabase.auth.getUser as any).mockResolvedValueOnce({ data: { user: null } });
         const { result } = renderHook(() => useAdminActions('floor1', 'admin'));
 
-        const mockInsert = vi.fn().mockResolvedValueOnce({ error: null });
-        (supabase.from as any).mockReturnValue({ insert: mockInsert, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
+        const mockEq = vi.fn().mockResolvedValueOnce({ error: null });
+        const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+        (supabase.from as any).mockReturnValue({ update: mockUpdate, select: () => ({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [] }) }) });
 
         let success;
         await act(async () => {
-            // Lower balance from 1000 to 600 → should insert withdrawal of 400
-            success = await result.current.setBalance(600, 1000);
+            success = await result.current.setBalance(600);
         });
 
         expect(success).toBe(null);
-        expect(mockInsert).toHaveBeenCalledWith([
-            { amount: 400, type: 'withdrawal', description: 'Admin Balance Adjustment (withdrawal)', floor_id: 'floor1' }
-        ]);
+        expect(mockUpdate).toHaveBeenCalledWith({ balance: 600 });
+        expect(mockEq).toHaveBeenCalledWith('id', 'floor1');
         expect(result.current.fundBalance).toBe(600);
     });
 
