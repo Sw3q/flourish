@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Floor, Profile, Proposal, Transaction } from '../types';
+import type { Floor, Profile, Proposal } from '../types';
 
 export type FloorStats = {
     floor: Floor;
@@ -73,18 +73,10 @@ export function useTowerStats() {
                 // Sync DB (fire and forget)
                 supabase.rpc('evaluate_cleanup').then();
 
-                // 5. Fetch all transactions (to calculate balances)
-                const { data: transactionsData, error: transactionsError } = await supabase
-                    .from('transactions')
-                    .select('amount, type, floor_id');
-
-                if (transactionsError) throw transactionsError;
-
                 const floors = filteredFloors as Floor[];
                 const profiles = profilesData as Profile[];
                 const activeProposals = ((activeProposalsData || []) as Proposal[]).filter(p => new Date(p.expires_at) > now);
                 const recentProposals = (recentProposalsData || []) as { id: string; created_at: string }[];
-                const transactions = transactionsData as Transaction[];
 
                 // Calculate activity trend (group proposals by day)
                 const dailyActivity = new Array(30).fill(0);
@@ -98,15 +90,10 @@ export function useTowerStats() {
                 const floorStats: FloorStats[] = floors.map(floor => {
                     const floorProfiles = profiles.filter(p => p.floor_id === floor.id && p.is_approved);
                     const floorProposals = activeProposals.filter(p => p.floor_id === floor.id);
-                    const floorTransactions = transactions.filter(t => t.floor_id === floor.id);
-
-                    const balance = floorTransactions.reduce((acc, t) => {
-                        return t.type === 'deposit' ? acc + Number(t.amount) : acc - Number(t.amount);
-                    }, 0);
 
                     return {
                         floor,
-                        balance,
+                        balance: Number(floor.balance) || 0,
                         activeProposals: floorProposals.length,
                         memberCount: floorProfiles.length,
                     };

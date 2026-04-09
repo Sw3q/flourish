@@ -71,7 +71,7 @@ export default function AdminDashboard() {
         setBalanceError(null);
         const target = parseFloat(balanceInput);
         if (!isNaN(target) && target !== fundBalance) {
-            const err = await setBalance(target, fundBalance);
+            const err = await setBalance(target);
             if (err) {
                 setBalanceError(err);
                 return;

@@ -19,14 +19,26 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
     };
 
     const fetchFundBalance = async (): Promise<number> => {
-        let q = supabase.from('transactions').select('amount, type');
-        if (currentUserRole !== 'super_admin' && currentFloorId) q = q.eq('floor_id', currentFloorId);
+        if (!currentFloorId) {
+            console.warn('[Ledger] No currentFloorId provided to fetchFundBalance');
+            return 0;
+        }
+        
+        console.log('[Ledger] Fetching balance for floor:', currentFloorId);
+        const { data, error } = await supabase
+            .from('floors')
+            .select('id, name, balance')
+            .eq('id', currentFloorId)
+            .single();
+        
+        if (error) {
+            console.error('[Ledger] Error fetching floor balance:', error);
+            return 0;
+        }
 
-        const { data } = await q;
         if (data) {
-            const balance = data.reduce((acc: number, curr: { amount: number; type: string }) => {
-                return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-            }, 0);
+            const balance = Number(data.balance) || 0;
+            console.log(`[Ledger] Floor "${data.name}" balance is:`, balance);
             setFundBalanceState(balance);
             return balance;
         }
@@ -41,14 +53,12 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
         let runningBalance = balance;
         for (const expense of due) {
             const transFloorId = expense.floor_id || currentFloorId;
+            
+            // Updating floors.balance now automatically creates an audit transaction via DB trigger
             const { error: txError } = await supabase
-                .from('transactions')
-                .insert([{
-                    amount: expense.amount,
-                    type: 'withdrawal',
-                    description: `Auto Recurring: ${expense.title}`,
-                    floor_id: transFloorId,
-                }]);
+                .from('floors')
+                .update({ balance: runningBalance - expense.amount })
+                .eq('id', transFloorId);
 
             if (!txError) {
                 const nowIso = now.toISOString();
@@ -58,6 +68,7 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
                     .eq('id', expense.id);
 
                 runningBalance -= expense.amount;
+                
                 setRecurringExpenses(prev =>
                     prev.map(e => e.id === expense.id ? { ...e, last_processed_at: nowIso } : e)
                 );
@@ -66,20 +77,14 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
         setFundBalanceState(runningBalance);
     };
 
-    const setBalance = async (targetBalance: number, currentBalance: number): Promise<string | null> => {
+    const setBalance = async (targetBalance: number): Promise<string | null> => {
         if (isNaN(targetBalance) || !currentFloorId) return 'Invalid amount or floor.';
-        const delta = targetBalance - currentBalance;
-        if (delta === 0) return null;
-
-        const type = delta > 0 ? 'deposit' : 'withdrawal';
+        
+        // Updating floors.balance now automatically creates an audit transaction via DB trigger
         const { error } = await supabase
-            .from('transactions')
-            .insert([{
-                amount: Math.abs(delta),
-                type,
-                description: delta > 0 ? 'Admin Balance Adjustment (deposit)' : 'Admin Balance Adjustment (withdrawal)',
-                floor_id: currentFloorId,
-            }]);
+            .from('floors')
+            .update({ balance: targetBalance })
+            .eq('id', currentFloorId);
 
         if (!error) {
             setFundBalanceState(targetBalance);
@@ -91,9 +96,13 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
 
     const addFunds = async (amount: number) => {
         if (isNaN(amount) || amount <= 0 || !currentFloorId) return false;
+        
+        // Single update - DB trigger handles the transaction record
         const { error } = await supabase
-            .from('transactions')
-            .insert([{ amount, type: 'deposit', description: 'Admin Manual Deposit', floor_id: currentFloorId }]);
+            .from('floors')
+            .update({ balance: fundBalance + amount })
+            .eq('id', currentFloorId);
+        
         if (!error) {
             setFundBalanceState((prev: number) => prev + amount);
             return true;
@@ -151,14 +160,14 @@ export function useAdminLedger(currentFloorId: string | null, currentUserRole?: 
     };
 
     const processRecurringExpense = async (expense: RecurringExpense) => {
+        if (!currentFloorId && !expense.floor_id) return false;
+        const targetFloorId = expense.floor_id || currentFloorId!;
+
+        // Single update - DB trigger handles the transaction record
         const { error } = await supabase
-            .from('transactions')
-            .insert([{
-                amount: expense.amount,
-                type: 'withdrawal',
-                description: `Recurring Expense: ${expense.title}`,
-                floor_id: expense.floor_id || currentFloorId
-            }]);
+            .from('floors')
+            .update({ balance: fundBalance - expense.amount })
+            .eq('id', targetFloorId);
 
         if (!error) {
             const nowIso = new Date().toISOString();

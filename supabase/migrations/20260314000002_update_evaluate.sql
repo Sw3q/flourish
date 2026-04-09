@@ -100,14 +100,8 @@ begin
     -- Mark passed
     update proposals set status = 'passed' where id = p_proposal_id;
 
-    -- Auto-log withdrawal transaction (scoped to the proposal's floor automatically)
-    insert into transactions (amount, type, description, floor_id)
-    values (
-      v_proposal.amount,
-      'withdrawal',
-      'Auto: Proposal "' || v_proposal.title || '" passed',
-      v_proposal.floor_id
-    );
+    -- Update floor balance (Trigger will handle the audit transaction)
+    update floors set balance = balance - v_proposal.amount where id = v_proposal.floor_id;
     return;
   end if;
 

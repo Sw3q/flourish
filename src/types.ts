@@ -4,6 +4,7 @@ export type Floor = {
     id: string;
     name: string;
     floor_number: number;
+    balance: number;
     created_at: string;
 };
 

@@ -74,14 +74,19 @@ export function useDashboardData(floorIdOverride?: string | null) {
 
         if (allMembers) setMembers(allMembers as Profile[]);
 
-        // Fetch floor name
-        const { data: floorData } = await supabase
+        // Fetch floor data (name and balance source of truth)
+        const { data: floorRecord, error: floorDataError } = await supabase
             .from('floors')
-            .select('name')
+            .select('name, balance')
             .eq('id', activeFloorId)
             .single();
         
-        if (floorData) setFloorName(floorData.name);
+        console.log('[Dashboard] Raw Floor Data for', activeFloorId, ':', { data: floorRecord, error: floorDataError });
+
+        if (floorRecord) {
+            setFloorName(floorRecord.name);
+            setFundBalance(Number(floorRecord.balance) || 0);
+        }
 
         // Calculate global voting power (1 + direct delegations to me)
         const { count } = await supabase
@@ -102,15 +107,6 @@ export function useDashboardData(floorIdOverride?: string | null) {
             const map: Record<string, string> = {};
             propDelegations.forEach(pd => { map[pd.proposal_id] = pd.delegated_to; });
             setProposalDelegations(map);
-        }
-
-        // Fetch total pot balance for this floor
-        const { data: txs } = await supabase.from('transactions').select('amount, type').eq('floor_id', activeFloorId);
-        if (txs) {
-            const balance = txs.reduce((acc, curr) => {
-                return curr.type === 'deposit' ? acc + Number(curr.amount) : acc - Number(curr.amount);
-            }, 0);
-            setFundBalance(balance);
         }
 
         // Fetch active recurring expenses for monthly expenses rate on this floor
